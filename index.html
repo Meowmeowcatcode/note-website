@@ -1,57 +1,16 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'
-    'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+
 <html>
 <head>
 <title>Mia's notes</title>
-<script type="text/javascript">
-// JavaScript to generate a compact date representation
 
-//
-// format date ISO-fashion: yyyy-mm-dd
-//
-function date_ddmmmyyyy(date)
-{
-  var d = date.getDate();
-  var m = date.getMonth() + 1;
-  var y = date.getFullYear();
-
-  return "" + y + "-" + (m<10?"0"+m:m) + "-" + (d<10?"0"+d:d);
-}
-
-//
-// get last modified date of the 
-// current document.
-//
-function date_lastmodified()
-{
-  var lmd = document.lastModified;
-  var s   = "Unknown";
-  var d1;
-
-  // check if we have a valid date
-  // before proceeding
-  if(0 != (d1=Date.parse(lmd)))
-  {
-    s = "" + date_ddmmmyyyy(new Date(d1));
-  }
-
-  return s;
-}
-// End
-</script>
 </head>
 <body>
 <table width='100%' cellpadding='0' summary='Canned page header' bgcolor="#ddd">
 <tr>
 <td><h2>Mia's notes</h2></td>
-<td align="center"><img src="giflib-logo.gif"></td>
-<td align='right'><script type="text/javascript">
-document.write(date_lastmodified());
-</script></td>
+</td>
 </tr>
 </table>
-
 
     
 </body>
