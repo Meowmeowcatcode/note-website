@@ -116,17 +116,7 @@ function closeNoteDialog() {
   document.getElementById('noteDialog').close()
 }
 
-function toggleTheme() {
-  const isDark = document.body.classList.toggle('dark-theme')
-  localStorage.setItem('theme', isDark ? 'dark' : 'light')
-  document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙'
-}
 
-function applyStoredTheme() {
-  if(localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark-theme')
-    document.getElementById('themeToggleBtn').textContent = '☀️'
-  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
