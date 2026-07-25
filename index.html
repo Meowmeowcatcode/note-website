@@ -1,54 +1,121 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <style>
-        body {background-color: powderblue;}
-        h1   {color: blue;}
-        p    {color: red;}
-    </style>
-    <title>Mia's notes</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Simple Notes</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; }
+    textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; box-sizing: border-box; }
+    button { padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    button:hover { background-color: #0056b3; }
+    .note-item { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .note-actions button { margin-left: 5px; font-size: 12px; padding: 5px 10px; }
+    .note-actions .delete { background-color: #dc3545; }
+    .note-actions .edit { background-color: #ffc107; color: black; }
+  </style>
 </head>
 <body>
-    <audio controls autoplay>
-      <source src="1-02 Ascension.mp3" type="audio/mpeg">
-    </audio>
-    <h1>this is the main page</h1>
-    <a href="college/">COLLEGE</a>
-    <a href="ideas/">IDEAS</a>
-    <script>(function(d, s, id) { var js, pjs = d.getElementsByTagName(s)[0]; if (d.getElementById(id)) return; js = d.createElement(s); js.id = id; js.src = "//www.tickcounter.com/static/js/loader.js"; pjs.parentNode.insertBefore(js, pjs); }(document, "script", "tickcounter-sdk"));</script><a data-type="countdown" data-id="10958909" class="tickcounter" style="display:block; left:0; width:100%; height:0; position:relative; padding-bottom:25%; margin:0 auto;" title="Results day" href="//www.tickcounter.com/">Results day</a>
-    <div class="popup-box">
-        <div class="popup show">
-            <div class="content">
-                <header>
-                    <p>Add a new note</p>
-                </header>
-                <form action="#">
-                    <div class="row tile">
-                        <label>Title</label>
-                        <input type="text" id="input">
-                    </div>
-                    <div class="row description">
-                        <label for="">Description</label>
-                       <textarea name="" id=""></textarea>
-                    </div>
-                    <button class="add-note">Add Note</button>
-                </form>
-            </div>
-        </div>
-    </div>
-<div class="wrapper">
-   <li class="add-box">
-    <div class="icon"><i class="uil uil-plus"></i></div>
-    <p>Add new note</p>
-   </li>
 
-   <li class="note">
-    <div class="details">
-        <p>This is a Title</p>
-        <span>this is the note</span>
-    </div>
+  <h1>My Personal Notes</h1>
+  
+  <textarea id="noteInput" placeholder="Type your note here..."></textarea>
+  <button id="saveBtn">Save Note</button>
 
+  <h2>Saved Notes</h2>
+  <div id="notesList">Loading notes...</div>
 
-</div>
-<script src="script.js"></script>
+  <!-- Firebase App and Firestore SDKs loaded from CDN -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjw051lmAYH1ZQEEu328m4ErGaaMDKVpc", 
+      authDomain: "notes-81e1c.firebaseapp.com",
+      projectId: "notes-81e1c",
+      storageBucket: "notes-81e1c.firebasestorage.app",
+      messagingSenderId: "1005587501274",
+      appId: "1:1005587501274:web:82da593e6acb2ab97dd5e3" 
+    };
+
+    // Initialize Firebase and Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const notesCollection = collection(db, "notes");
+
+    const noteInput = document.getElementById("noteInput");
+    const saveBtn = document.getElementById("saveBtn");
+    const notesList = document.getElementById("notesList");
+
+    let editingNoteId = null;
+
+    // 1. SAVE or UPDATE a note
+    saveBtn.addEventListener("click", async () => {
+      const text = noteInput.value.trim();
+      if (!text) return;
+
+      if (editingNoteId) {
+        // Update an existing note
+        const noteRef = doc(db, "notes", editingNoteId);
+        await updateDoc(noteRef, { text: text });
+        editingNoteId = null;
+        saveBtn.textContent = "Save Note";
+      } else {
+        // Create a brand new note
+        await addDoc(notesCollection, {
+          text: text,
+          createdAt: new Date()
+        });
+      }
+      noteInput.value = "";
+    });
+
+    // 2. LOAD notes in real-time
+    onSnapshot(notesCollection, (snapshot) => {
+      notesList.innerHTML = "";
+      
+      // Map and sort notes locally by creation date
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      docs.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+      if (docs.length === 0) {
+        notesList.innerHTML = "<p>No notes saved yet.</p>";
+        return;
+      }
+
+      docs.forEach(note => {
+        const div = document.createElement("div");
+        div.className = "note-item";
+        div.innerHTML = `
+          <span>${note.text}</span>
+          <div class="note-actions">
+            <button class="edit" data-id="${note.id}" data-text="${note.text}">Edit</button>
+            <button class="delete" data-id="${note.id}">Delete</button>
+          </div>
+        `;
+        notesList.appendChild(div);
+      });
+
+      // Hook up Delete Buttons
+      document.querySelectorAll(".delete").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.getAttribute("data-id");
+          await deleteDoc(doc(db, "notes", id));
+        });
+      });
+
+      // Hook up Edit Buttons
+      document.querySelectorAll(".edit").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          editingNoteId = e.target.getAttribute("data-id");
+          noteInput.value = e.target.getAttribute("data-text");
+          saveBtn.textContent = "Update Note";
+          noteInput.focus();
+        });
+      });
+    });
+  </script>
 </body>
 </html>
