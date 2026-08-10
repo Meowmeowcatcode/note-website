@@ -12,6 +12,10 @@
   </head>
 
   <body>
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="signUp()">Create account</button>
+    <button onclick="signIn()">Log in</button>
     <div class="container">
       <header class="header">
         <h1>Elegant Notes</h1>
@@ -149,7 +153,15 @@
         </div>
       </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <script>
+      const supabase = window.supabase.createClient(
+        "https://wrfsbvklvxngamyyibrr.supabase.co",
+        "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo"
+        );
+    </script>
     <script src="./index.js"></script>
   </body>
 </html>
