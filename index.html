@@ -154,16 +154,18 @@
   </div>
 </div>
 
-<!-- Supabase library: only include this ONCE -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Connect your website to your Supabase project -->
-<script>
-  const supabase = window.supabase.createClient(
-    "https://wrfsbvklvxngamyyibrr.supabase.co",
-    "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo"
-  );
-</script>
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://wrfsbvklvxngamyyibrr.supabase.co",
+      "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo"
+    );
+  </script>
 
-<!-- Your existing JavaScript -->
-<script src="./index.js"></script>
+  <!-- Your JavaScript -->
+  <script src="./index.js"></script>
+
+</body>
+</html>
