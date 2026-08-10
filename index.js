@@ -1,4 +1,4 @@
-```javascript
+javascript
 document.addEventListener("DOMContentLoaded", async function () {
     const notesContainer = document.getElementById("notesContainer");
     const addNoteBtn = document.getElementById("addNoteBtn");
@@ -377,4 +377,3 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 });
-```
