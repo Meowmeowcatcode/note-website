@@ -1,4 +1,5 @@
-document.addEventListener("DOMContentLoaded", function () {
+```javascript
+document.addEventListener("DOMContentLoaded", async function () {
     const notesContainer = document.getElementById("notesContainer");
     const addNoteBtn = document.getElementById("addNoteBtn");
     const addNoteModal = document.getElementById("addNoteModal");
@@ -11,11 +12,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
     const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 
-    let notes = JSON.parse(localStorage.getItem("notes")) || [];
+    // Notes are now stored in Supabase instead of localStorage
+    let notes = [];
     let noteToDeleteId = null;
 
-    renderNotes();
-    updateEmptyState();
+    // -----------------------------
+    // LOAD NOTES WHEN PAGE OPENS
+    // -----------------------------
+
+    await loadNotes();
+
+    // -----------------------------
+    // EVENT LISTENERS
+    // -----------------------------
 
     addNoteBtn.addEventListener("click", openAddNoteModal);
     closeModalBtn.addEventListener("click", closeAddNoteModal);
@@ -25,40 +34,134 @@ document.addEventListener("DOMContentLoaded", function () {
     cancelDeleteBtn.addEventListener("click", closeConfirmModal);
     confirmDeleteBtn.addEventListener("click", confirmDeleteNote);
 
+    // -----------------------------
+    // LOAD NOTES FROM SUPABASE
+    // -----------------------------
+
+    async function loadNotes() {
+        try {
+            const {
+                data: { user },
+                error: userError
+            } = await supabase.auth.getUser();
+
+            if (userError) {
+                console.error("Authentication error:", userError);
+                return;
+            }
+
+            if (!user) {
+                console.log("No user is logged in.");
+
+                notesContainer.innerHTML = "";
+                emptyState.style.display = "block";
+
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from("notes")
+                .select("*")
+                .order("created_at", {
+                    ascending: false
+                });
+
+            if (error) {
+                console.error("Error loading notes:", error);
+                alert("Could not load your notes.");
+                return;
+            }
+
+            notes = data || [];
+
+            renderNotes();
+            updateEmptyState();
+
+        } catch (error) {
+            console.error("Unexpected error:", error);
+        }
+    }
+
+    // -----------------------------
+    // DISPLAY NOTES
+    // -----------------------------
+
     function renderNotes(notesToRender = notes) {
         notesContainer.innerHTML = "";
 
-        notesToRender.forEach((note, index) => {
+        notesToRender.forEach((note) => {
             const noteElement = document.createElement("div");
+
             noteElement.className = "note-card fade-in";
+
             noteElement.innerHTML = `
-            <div class="note-content">
-                <div class="note-header">
-                    <h3 class="note-title">${note.title}</h3>
-                    <div class="note-actions">
-                        <button class="delete-btn" data-id="${index}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                <div class="note-content">
+
+                    <div class="note-header">
+
+                        <h3 class="note-title">
+                            ${escapeHtml(note.title)}
+                        </h3>
+
+                        <div class="note-actions">
+
+                            <button
+                                class="delete-btn"
+                                data-id="${note.id}"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+
+                        </div>
+
                     </div>
+
+                    <p class="note-text">
+                        ${escapeHtml(note.content)}
+                    </p>
+
+                    <div class="note-footer">
+
+                        <span class="note-tag ${getTagClass(note.tag)}">
+                            ${getTagIcon(note.tag)}
+                            ${getTagName(note.tag)}
+                        </span>
+
+                        <span class="note-date">
+                            ${formatDate(note.created_at)}
+                        </span>
+
+                    </div>
+
                 </div>
-                <p class="note-text">${note.content}</p>
-                <div class="note-footer">
-                    <span class="note-tag ${getTagClass(note.tag)}">
-                        ${getTagIcon(note.tag)} ${getTagName(note.tag)}
-                    </span>
-                    <span class="note-date">${formatDate(note.date)}</span>
-                </div>
-            </div>`;
+            `;
+
             notesContainer.appendChild(noteElement);
         });
 
+        // Add delete button listeners
         document.querySelectorAll(".delete-btn").forEach((btn) => {
             btn.addEventListener("click", function () {
-                noteToDeleteId = parseInt(this.getAttribute("data-id"));
+                noteToDeleteId = this.getAttribute("data-id");
                 openConfirmModal();
             });
         });
     }
+
+    // -----------------------------
+    // SECURITY
+    // Prevent note HTML from being injected
+    // -----------------------------
+
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML;
+    }
+
+    // -----------------------------
+    // TAG FUNCTIONS
+    // -----------------------------
 
     function getTagClass(tag) {
         const classes = {
@@ -67,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ideas: "tag-ideas",
             reminders: "tag-reminders",
         };
+
         return classes[tag] || "";
     }
 
@@ -77,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ideas: '<i class="fas fa-lightbulb"></i>',
             reminders: '<i class="fas fa-bell"></i>',
         };
+
         return icons[tag] || "";
     }
 
@@ -87,11 +192,19 @@ document.addEventListener("DOMContentLoaded", function () {
             ideas: "Ideas",
             reminders: "Reminders",
         };
+
         return names[tag] || tag;
     }
 
+    // -----------------------------
+    // DATE
+    // -----------------------------
+
     function formatDate(dateString) {
+        if (!dateString) return "";
+
         const date = new Date(dateString);
+
         return date.toLocaleDateString("en-US", {
             day: "2-digit",
             month: "2-digit",
@@ -100,6 +213,10 @@ document.addEventListener("DOMContentLoaded", function () {
             minute: "2-digit",
         });
     }
+
+    // -----------------------------
+    // ADD NOTE MODAL
+    // -----------------------------
 
     function openAddNoteModal() {
         addNoteModal.classList.add("active");
@@ -112,6 +229,10 @@ document.addEventListener("DOMContentLoaded", function () {
         noteForm.reset();
     }
 
+    // -----------------------------
+    // DELETE MODAL
+    // -----------------------------
+
     function openConfirmModal() {
         confirmModal.classList.add("active");
         document.body.style.overflow = "hidden";
@@ -123,56 +244,114 @@ document.addEventListener("DOMContentLoaded", function () {
         noteToDeleteId = null;
     }
 
-    function handleNoteSubmit(e) {
+    // -----------------------------
+    // SAVE NEW NOTE
+    // -----------------------------
+
+    async function handleNoteSubmit(e) {
         e.preventDefault();
 
-        const title = document.getElementById("noteTitle").value;
-        const content = document.getElementById("noteContent").value;
-        const tag = document.querySelector(
+        const {
+            data: { user },
+            error: userError
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+            alert("Please log in before saving a note.");
+            return;
+        }
+
+        const title = document.getElementById("noteTitle").value.trim();
+        const content = document.getElementById("noteContent").value.trim();
+
+        const selectedTag = document.querySelector(
             'input[name="noteTag"]:checked'
-        ).value;
+        );
 
-        const newNote = {
-            title,
-            content,
-            tag,
-            date: new Date().toISOString(),
-        };
+        const tag = selectedTag ? selectedTag.value : "ideas";
 
-        notes.unshift(newNote);
-        saveNotes();
+        if (!title || !content) {
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from("notes")
+            .insert({
+                user_id: user.id,
+                title: title,
+                content: content,
+                tag: tag
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error saving note:", error);
+            alert("Could not save your note.");
+            return;
+        }
+
+        // Add new note to the beginning
+        notes.unshift(data);
+
         renderNotes();
-        closeAddNoteModal();
         updateEmptyState();
+
+        closeAddNoteModal();
         filterNotes();
     }
 
-    function confirmDeleteNote() {
-        if (noteToDeleteId !== null) {
-            notes.splice(noteToDeleteId, 1);
-            saveNotes();
-            renderNotes();
-            updateEmptyState();
-            filterNotes();
-            closeConfirmModal();
+    // -----------------------------
+    // DELETE NOTE
+    // -----------------------------
+
+    async function confirmDeleteNote() {
+        if (!noteToDeleteId) {
+            return;
         }
+
+        const { error } = await supabase
+            .from("notes")
+            .delete()
+            .eq("id", noteToDeleteId);
+
+        if (error) {
+            console.error("Error deleting note:", error);
+            alert("Could not delete the note.");
+            return;
+        }
+
+        // Remove it from the local array
+        notes = notes.filter(
+            (note) => note.id !== noteToDeleteId
+        );
+
+        renderNotes();
+        updateEmptyState();
+        filterNotes();
+        closeConfirmModal();
     }
 
-    function saveNotes() {
-        localStorage.setItem("notes", JSON.stringify(notes));
-    }
+    // -----------------------------
+    // SEARCH + FILTER
+    // -----------------------------
 
     function filterNotes() {
-        const searchTerm = searchInput.value.toLowerCase();
+        const searchTerm = searchInput.value.toLowerCase().trim();
         const filterValue = filterSelect.value;
 
-        let filteredNotes = notes;
+        let filteredNotes = [...notes];
 
         if (searchTerm) {
             filteredNotes = filteredNotes.filter(
                 (note) =>
-                    note.title.toLowerCase().includes(searchTerm) ||
-                    note.content.toLowerCase().includes(searchTerm)
+                    (note.title || "")
+                        .toLowerCase()
+                        .includes(searchTerm) ||
+
+                    (note.content || "")
+                        .toLowerCase()
+                        .includes(searchTerm)
             );
         }
 
@@ -186,6 +365,10 @@ document.addEventListener("DOMContentLoaded", function () {
         updateEmptyState(filteredNotes);
     }
 
+    // -----------------------------
+    // EMPTY STATE
+    // -----------------------------
+
     function updateEmptyState(notesToCheck = notes) {
         if (notesToCheck.length === 0) {
             emptyState.style.display = "block";
@@ -194,3 +377,4 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 });
+```
