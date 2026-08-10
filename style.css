@@ -1,4 +1,4 @@
-```css
+
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap");
 
 * {
@@ -481,4 +481,104 @@ body {
 .fade-in {
   animation: fadeIn 0.4s ease-out forwards;
 }
-```
+
+
+/* =========================================================
+   SUPABASE LOGIN
+   ========================================================= */
+
+#authBox {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 25px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+#loginArea h2 {
+  color: #4f46e5;
+  margin-bottom: 8px;
+  font-size: 1.4rem;
+}
+
+#loginArea p {
+  color: #666;
+  margin-bottom: 18px;
+}
+
+#authEmail,
+#authPassword {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 15px;
+  margin: 5px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: "Montserrat", sans-serif;
+}
+
+#authEmail:focus,
+#authPassword:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.auth-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.auth-buttons button,
+#logoutBtn {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.auth-buttons button:hover,
+#logoutBtn:hover {
+  background-color: #4338ca;
+}
+
+#authMessage {
+  margin-top: 15px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+#loggedInArea {
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+#loggedInEmail {
+  color: #555;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+
+  #authEmail,
+  #authPassword {
+    width: calc(100% - 10px);
+  }
+
+  #loggedInArea {
+    flex-direction: column;
+  }
+}
