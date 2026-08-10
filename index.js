@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // =========================================================
     // ELEMENTS
-    // =========================================================
+    // ========================================================= 
 
     const notesContainer = document.getElementById("notesContainer");
     const addNoteBtn = document.getElementById("addNoteBtn");
