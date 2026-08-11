@@ -1,10 +1,12 @@
+
+
 document.addEventListener("DOMContentLoaded", function () {
     const notesContainer = document.getElementById("notesContainer");
     const addNoteBtn = document.getElementById("addNoteBtn");
     const addNoteModal = document.getElementById("addNoteModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const noteForm = document.getElementById("noteForm");
-    const searchInput = document.getElementById("searchInput"); 
+    const searchInput = document.getElementById("searchInput");
     const filterSelect = document.getElementById("filterSelect");
     const emptyState = document.getElementById("emptyState");
     const confirmModal = document.getElementById("confirmModal");
