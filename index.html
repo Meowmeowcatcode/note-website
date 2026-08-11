@@ -29,8 +29,8 @@
           <div class="filter-group">
             <select id="filterSelect" class="filter-select">
               <option value="all">All notes</option>
-              <option value="work">Work</option>
-              <option value="personal">Personal</option>
+              <option value="school">School</option>
+              <option value="random">Random</option>
               <option value="ideas">Ideas</option>
               <option value="reminders">Reminders</option>
             </select>
@@ -48,7 +48,7 @@
       <div id="emptyState" class="empty-state">
         <i class="fas fa-notes-medical"></i>
         <h3>No Notes</h3>
-        <p>Add your first note by clicking the "Add" button</p>
+        <p>Add a note</p>
       </div>
 
       <div id="addNoteModal" class="modal-overlay">
@@ -83,19 +83,19 @@
                     value="work"
                     class="tag-radio"
                   />
-                  <span class="tag-label tag-work">
-                    <i class="fas fa-briefcase"></i> Work
+                  <span class="tag-label tag-school">
+                    <i class="fas fa-briefcase"></i> School
                   </span>
                 </label>
                 <label class="tag-option">
                   <input
                     type="radio"
                     name="noteTag"
-                    value="personal"
+                    value="random"
                     class="tag-radio"
                   />
-                  <span class="tag-label tag-personal">
-                    <i class="fas fa-user"></i> Personal
+                  <span class="tag-label tag-random">
+                    <i class="fas fa-user"></i> Random
                   </span>
                 </label>
                 <label class="tag-option">
