@@ -3,1018 +3,339 @@ var SUPABASE_URL = "https://wrfsbvklvxngamyyibrr.supabase.co";
 var SUPABASE_KEY =
   "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo";
 
-var supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-document.addEventListener("DOMContentLoaded", function () {
-  var notesContainer =
-    document.getElementById("notesContainer");
-
-  var addNoteBtn =
-    document.getElementById("addNoteBtn");
-
-  var addNoteModal =
-    document.getElementById("addNoteModal");
-
-  var closeModalBtn =
-    document.getElementById("closeModalBtn");
-
-  var noteForm =
-    document.getElementById("noteForm");
-
-  var searchInput =
-    document.getElementById("searchInput");
-
-  var filterSelect =
-    document.getElementById("filterSelect");
-
-  var emptyState =
-    document.getElementById("emptyState");
-
-  var confirmModal =
-    document.getElementById("confirmModal");
-
-  var cancelDeleteBtn =
-    document.getElementById("cancelDeleteBtn");
-
-  var confirmDeleteBtn =
-    document.getElementById("confirmDeleteBtn");
-
-  var emailInput =
-    document.getElementById("emailInput");
-
-  var passwordInput =
-    document.getElementById("passwordInput");
-
-  var loginBtn =
-    document.getElementById("loginBtn");
-
-  var signupBtn =
-    document.getElementById("signupBtn");
-
-  var logoutBtn =
-    document.getElementById("logoutBtn");
-
-  var authStatus =
-    document.getElementById("authStatus");
-
-  var notes = [];
-
-  var currentUser = null;
-
-  var noteToDeleteId = null;
-
-
-  // --------------------------------
-  // Check that Supabase loaded
-  // --------------------------------
-
-  if (!window.supabase) {
-    console.error(
-      "Supabase library did not load."
-    );
-
-    return;
-  }
-
-
-  // --------------------------------
-  // Authentication status
-  // --------------------------------
-
-  function showStatus(message, type) {
-    authStatus.textContent = message;
-
-    authStatus.className =
-      "auth-status";
-
-    if (type === "error") {
-      authStatus.classList.add(
-        "auth-error"
-      );
-    }
-
-    if (type === "success") {
-      authStatus.classList.add(
-        "auth-success"
-      );
-    }
-  }
-
-
-  // --------------------------------
-  // Sign up
-  // --------------------------------
-
-  signupBtn.addEventListener(
-    "click",
-    function () {
-      signUp();
-    }
+var supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
   );
 
 
-  async function signUp() {
-    var email =
-      emailInput.value.trim();
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
 
-    var password =
-      passwordInput.value;
-
-
-    if (!email) {
-      showStatus(
-        "Please enter your email.",
-        "error"
-      );
-
-      return;
-    }
+    var notes = [];
+    var currentUser = null;
+    var deleteId = null;
 
 
-    if (!password) {
-      showStatus(
-        "Please enter a password.",
-        "error"
-      );
+    var emailInput =
+      document.getElementById("emailInput");
 
-      return;
-    }
+    var passwordInput =
+      document.getElementById("passwordInput");
 
+    var signupBtn =
+      document.getElementById("signupBtn");
 
-    if (password.length < 6) {
-      showStatus(
-        "Password must be at least 6 characters.",
-        "error"
-      );
+    var loginBtn =
+      document.getElementById("loginBtn");
 
-      return;
-    }
+    var logoutBtn =
+      document.getElementById("logoutBtn");
 
+    var authStatus =
+      document.getElementById("authStatus");
 
-    signupBtn.disabled = true;
-    loginBtn.disabled = true;
+    var notesContainer =
+      document.getElementById("notesContainer");
 
+    var emptyState =
+      document.getElementById("emptyState");
 
-    showStatus(
-      "Creating your account..."
-    );
+    var addNoteBtn =
+      document.getElementById("addNoteBtn");
 
+    var addNoteModal =
+      document.getElementById("addNoteModal");
 
-    try {
-      var result =
-        await supabaseClient.auth.signUp(
-          {
-            email: email,
-            password: password
-          }
-        );
+    var closeModalBtn =
+      document.getElementById("closeModalBtn");
 
+    var noteForm =
+      document.getElementById("noteForm");
 
-      if (result.error) {
-        console.error(
-          "Supabase signup error:",
-          result.error
-        );
+    var searchInput =
+      document.getElementById("searchInput");
 
-        showStatus(
-          result.error.message,
-          "error"
-        );
+    var filterSelect =
+      document.getElementById("filterSelect");
 
-        return;
-      }
+    var confirmModal =
+      document.getElementById("confirmModal");
+
+    var cancelDeleteBtn =
+      document.getElementById("cancelDeleteBtn");
+
+    var confirmDeleteBtn =
+      document.getElementById("confirmDeleteBtn");
 
 
-      if (result.data.user) {
-        currentUser =
-          result.data.user;
-      }
+    function status(message, error) {
 
+      authStatus.textContent = message;
 
-      if (result.data.session) {
-        showLoggedIn();
+      authStatus.className =
+        "auth-status";
 
-        showStatus(
-          "Account created! You are now logged in.",
-          "success"
-        );
-
-        await loadNotes();
-      } else {
-        showStatus(
-          "Account created! Check your email to confirm your account, then log in.",
-          "success"
+      if (error) {
+        authStatus.classList.add(
+          "auth-error"
         );
       }
-
-    } catch (error) {
-      console.error(
-        "Signup error:",
-        error
-      );
-
-      showStatus(
-        "Something went wrong. Check the browser console.",
-        "error"
-      );
-
-    } finally {
-      signupBtn.disabled = false;
-      loginBtn.disabled = false;
-    }
-  }
-
-
-  // --------------------------------
-  // Log in
-  // --------------------------------
-
-  loginBtn.addEventListener(
-    "click",
-    function () {
-      logIn();
-    }
-  );
-
-
-  async function logIn() {
-    var email =
-      emailInput.value.trim();
-
-    var password =
-      passwordInput.value;
-
-
-    if (!email || !password) {
-      showStatus(
-        "Please enter your email and password.",
-        "error"
-      );
-
-      return;
     }
 
 
-    loginBtn.disabled = true;
-    signupBtn.disabled = true;
+    function loggedIn() {
 
+      emailInput.style.display = "none";
 
-    showStatus(
-      "Logging in..."
-    );
+      passwordInput.style.display = "none";
 
+      signupBtn.style.display = "none";
 
-    try {
-      var result =
-        await supabaseClient.auth.signInWithPassword(
-          {
-            email: email,
-            password: password
-          }
-        );
+      loginBtn.style.display = "none";
 
-
-      if (result.error) {
-        console.error(
-          "Supabase login error:",
-          result.error
-        );
-
-        showStatus(
-          result.error.message,
-          "error"
-        );
-
-        return;
-      }
-
-
-      currentUser =
-        result.data.user;
-
-
-      showLoggedIn();
-
-
-      showStatus(
-        "Logged in as " +
-          currentUser.email,
-        "success"
-      );
-
-
-      await loadNotes();
-
-    } catch (error) {
-      console.error(
-        "Login error:",
-        error
-      );
-
-      showStatus(
-        "Something went wrong. Check the browser console.",
-        "error"
-      );
-
-    } finally {
-      loginBtn.disabled = false;
-      signupBtn.disabled = false;
+      logoutBtn.style.display =
+        "inline-block";
     }
-  }
 
 
-  // --------------------------------
-  // Log out
-  // --------------------------------
-
-  logoutBtn.addEventListener(
-    "click",
-    async function () {
-      var result =
-        await supabaseClient.auth.signOut();
-
-
-      if (result.error) {
-        console.error(
-          "Logout error:",
-          result.error
-        );
-
-        return;
-      }
-
-
-      currentUser = null;
-
-      notes = [];
-
+    function loggedOut() {
 
       emailInput.style.display = "";
 
       passwordInput.style.display = "";
 
-      loginBtn.style.display = "";
+      signupBtn.style.display =
+        "inline-block";
 
-      signupBtn.style.display = "";
+      loginBtn.style.display =
+        "inline-block";
 
       logoutBtn.style.display = "none";
-
-
-      renderNotes();
-
-      updateEmptyState();
-
-
-      showStatus(
-        "You have been logged out."
-      );
     }
-  );
 
 
-  // --------------------------------
-  // Show logged-in state
-  // --------------------------------
+    // SIGN UP
 
-  function showLoggedIn() {
-    emailInput.style.display = "none";
+    signupBtn.addEventListener(
+      "click",
+      async function () {
 
-    passwordInput.style.display = "none";
+        var email =
+          emailInput.value.trim();
 
-    loginBtn.style.display = "none";
-
-    signupBtn.style.display = "none";
-
-    logoutBtn.style.display = "inline-block";
-  }
+        var password =
+          passwordInput.value;
 
 
-  // --------------------------------
-  // Check existing login
-  // --------------------------------
+        if (!email || !password) {
 
-  async function checkSession() {
-    try {
-      var result =
-        await supabaseClient.auth.getSession();
+          status(
+            "Enter an email and password.",
+            true
+          );
+
+          return;
+        }
 
 
-      if (result.error) {
-        console.error(
-          "Session error:",
-          result.error
+        if (password.length < 6) {
+
+          status(
+            "Password must be at least 6 characters.",
+            true
+          );
+
+          return;
+        }
+
+
+        signupBtn.disabled = true;
+
+        loginBtn.disabled = true;
+
+        status(
+          "Creating account..."
         );
 
-        return;
+
+        var result =
+          await supabaseClient.auth.signUp(
+            {
+              email: email,
+              password: password
+            }
+          );
+
+
+        signupBtn.disabled = false;
+
+        loginBtn.disabled = false;
+
+
+        if (result.error) {
+
+          console.error(
+            "SIGNUP ERROR:",
+            result.error
+          );
+
+          status(
+            result.error.message,
+            true
+          );
+
+          return;
+        }
+
+
+        if (result.data.session) {
+
+          currentUser =
+            result.data.user;
+
+          loggedIn();
+
+          status(
+            "Account created and logged in!"
+          );
+
+          await loadNotes();
+
+        } else {
+
+          status(
+            "Account created! Check your email to confirm it."
+          );
+        }
+
       }
+    );
 
 
-      if (result.data.session) {
-        currentUser =
-          result.data.session.user;
+    // LOGIN
+
+    loginBtn.addEventListener(
+      "click",
+      async function () {
+
+        var email =
+          emailInput.value.trim();
+
+        var password =
+          passwordInput.value;
 
 
-        showLoggedIn();
+        if (!email || !password) {
+
+          status(
+            "Enter your email and password.",
+            true
+          );
+
+          return;
+        }
 
 
-        showStatus(
-          "Logged in as " +
-            currentUser.email,
-          "success"
+        loginBtn.disabled = true;
+
+        signupBtn.disabled = true;
+
+        status(
+          "Logging in..."
         );
 
+
+        var result =
+          await supabaseClient.auth.signInWithPassword(
+            {
+              email: email,
+              password: password
+            }
+          );
+
+
+        loginBtn.disabled = false;
+
+        signupBtn.disabled = false;
+
+
+        if (result.error) {
+
+          console.error(
+            "LOGIN ERROR:",
+            result.error
+          );
+
+          status(
+            result.error.message,
+            true
+          );
+
+          return;
+        }
+
+
+        currentUser =
+          result.data.user;
+
+        loggedIn();
+
+        status(
+          "Logged in as " +
+          currentUser.email
+        );
 
         await loadNotes();
+
       }
-
-    } catch (error) {
-      console.error(
-        "Session check error:",
-        error
-      );
-    }
-  }
+    );
 
 
-  // --------------------------------
-  // Load notes
-  // --------------------------------
+    // LOGOUT
 
-  async function loadNotes() {
-    if (!currentUser) {
-      return;
-    }
+    logoutBtn.addEventListener(
+      "click",
+      async function () {
+
+        var result =
+          await supabaseClient.auth.signOut();
 
 
-    var result =
-      await supabaseClient
-        .from("notes")
-        .select("*")
-        .eq(
-          "user_id",
-          currentUser.id
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
+        if (result.error) {
+
+          console.error(
+            "LOGOUT ERROR:",
+            result.error
+          );
+
+          return;
+        }
+
+
+        currentUser = null;
+
+        notes = [];
+
+        loggedOut();
+
+        renderNotes();
+
+        status(
+          "Logged out."
         );
 
-
-    if (result.error) {
-      console.error(
-        "Could not load notes:",
-        result.error
-      );
-
-      showStatus(
-        "Could not load notes: " +
-          result.error.message,
-        "error"
-      );
-
-      return;
-    }
+      }
+    );
 
 
-    notes =
-      result.data || [];
+    // LOAD NOTES
 
-
-    renderNotes();
-
-    updateEmptyState();
-  }
-
-
-  // --------------------------------
-  // Add note
-  // --------------------------------
-
-  noteForm.addEventListener(
-    "submit",
-    async function (event) {
-      event.preventDefault();
-
+    async function loadNotes() {
 
       if (!currentUser) {
-        showStatus(
-          "Please log in first.",
-          "error"
-        );
-
-        return;
-      }
-
-
-      var title =
-        document
-          .getElementById("noteTitle")
-          .value
-          .trim();
-
-
-      var content =
-        document
-          .getElementById("noteContent")
-          .value
-          .trim();
-
-
-      var selectedTag =
-        document.querySelector(
-          'input[name="noteTag"]:checked'
-        );
-
-
-      var tag =
-        selectedTag
-          ? selectedTag.value
-          : "ideas";
-
-
-      var result =
-        await supabaseClient
-          .from("notes")
-          .insert(
-            {
-              user_id:
-                currentUser.id,
-
-              title:
-                title,
-
-              content:
-                content,
-
-              tag:
-                tag
-            }
-          )
-          .select()
-          .single();
-
-
-      if (result.error) {
-        console.error(
-          "Could not save note:",
-          result.error
-        );
-
-        alert(
-          "Could not save note: " +
-            result.error.message
-        );
-
-        return;
-      }
-
-
-      notes.unshift(
-        result.data
-      );
-
-
-      renderNotes();
-
-      updateEmptyState();
-
-      closeAddNoteModal();
-    }
-  );
-
-
-  // --------------------------------
-  // Render notes
-  // --------------------------------
-
-  function renderNotes(
-    notesToRender
-  ) {
-    if (!notesToRender) {
-      notesToRender = notes;
-    }
-
-
-    notesContainer.innerHTML = "";
-
-
-    notesToRender.forEach(
-      function (note) {
-        var card =
-          document.createElement(
-            "div"
-          );
-
-
-        card.className =
-          "note-card fade-in";
-
-
-        var content =
-          document.createElement(
-            "div"
-          );
-
-
-        content.className =
-          "note-content";
-
-
-        var header =
-          document.createElement(
-            "div"
-          );
-
-
-        header.className =
-          "note-header";
-
-
-        var title =
-          document.createElement(
-            "h3"
-          );
-
-
-        title.className =
-          "note-title";
-
-        title.textContent =
-          note.title;
-
-
-        var actions =
-          document.createElement(
-            "div"
-          );
-
-
-        actions.className =
-          "note-actions";
-
-
-        var deleteButton =
-          document.createElement(
-            "button"
-          );
-
-
-        deleteButton.className =
-          "delete-btn";
-
-        deleteButton.type =
-          "button";
-
-
-        deleteButton.innerHTML =
-          '<i class="fas fa-trash"></i>';
-
-
-        deleteButton.addEventListener(
-          "click",
-          function () {
-            noteToDeleteId =
-              note.id;
-
-            confirmModal.classList.add(
-              "active"
-            );
-
-            document.body.style.overflow =
-              "hidden";
-          }
-        );
-
-
-        actions.appendChild(
-          deleteButton
-        );
-
-
-        header.appendChild(
-          title
-        );
-
-        header.appendChild(
-          actions
-        );
-
-
-        var text =
-          document.createElement(
-            "p"
-          );
-
-
-        text.className =
-          "note-text";
-
-        text.textContent =
-          note.content;
-
-
-        var footer =
-          document.createElement(
-            "div"
-          );
-
-
-        footer.className =
-          "note-footer";
-
-
-        var tag =
-          document.createElement(
-            "span"
-          );
-
-
-        tag.className =
-          "note-tag " +
-          getTagClass(note.tag);
-
-
-        tag.innerHTML =
-          getTagIcon(note.tag) +
-          " " +
-          getTagName(note.tag);
-
-
-        var date =
-          document.createElement(
-            "span"
-          );
-
-
-        date.className =
-          "note-date";
-
-        date.textContent =
-          formatDate(
-            note.created_at
-          );
-
-
-        footer.appendChild(
-          tag
-        );
-
-        footer.appendChild(
-          date
-        );
-
-
-        content.appendChild(
-          header
-        );
-
-        content.appendChild(
-          text
-        );
-
-        content.appendChild(
-          footer
-        );
-
-
-        card.appendChild(
-          content
-        );
-
-
-        notesContainer.appendChild(
-          card
-        );
-      }
-    );
-  }
-
-
-  // --------------------------------
-  // Search
-  // --------------------------------
-
-  searchInput.addEventListener(
-    "input",
-    filterNotes
-  );
-
-
-  filterSelect.addEventListener(
-    "change",
-    filterNotes
-  );
-
-
-  function filterNotes() {
-    var search =
-      searchInput.value
-        .toLowerCase()
-        .trim();
-
-
-    var filter =
-      filterSelect.value;
-
-
-    var filtered =
-      notes.slice();
-
-
-    if (search) {
-      filtered =
-        filtered.filter(
-          function (note) {
-            return (
-              note.title
-                .toLowerCase()
-                .includes(search) ||
-              note.content
-                .toLowerCase()
-                .includes(search)
-            );
-          }
-        );
-    }
-
-
-    if (filter !== "all") {
-      filtered =
-        filtered.filter(
-          function (note) {
-            return (
-              note.tag ===
-              filter
-            );
-          }
-        );
-    }
-
-
-    renderNotes(
-      filtered
-    );
-
-    updateEmptyState(
-      filtered
-    );
-  }
-
-
-  // --------------------------------
-  // Tags
-  // --------------------------------
-
-  function getTagClass(tag) {
-    var classes = {
-      school: "tag-school",
-      random: "tag-random",
-      ideas: "tag-ideas",
-      reminders: "tag-reminders"
-    };
-
-
-    return (
-      classes[tag] || ""
-    );
-  }
-
-
-  function getTagIcon(tag) {
-    var icons = {
-      school:
-        '<i class="fas fa-briefcase"></i>',
-
-      random:
-        '<i class="fas fa-user"></i>',
-
-      ideas:
-        '<i class="fas fa-lightbulb"></i>',
-
-      reminders:
-        '<i class="fas fa-bell"></i>'
-    };
-
-
-    return (
-      icons[tag] || ""
-    );
-  }
-
-
-  function getTagName(tag) {
-    var names = {
-      school: "School",
-      random: "Random",
-      ideas: "Ideas",
-      reminders: "Reminders"
-    };
-
-
-    return (
-      names[tag] || tag
-    );
-  }
-
-
-  // --------------------------------
-  // Date
-  // --------------------------------
-
-  function formatDate(
-    dateString
-  ) {
-    if (!dateString) {
-      return "";
-    }
-
-
-    var date =
-      new Date(dateString);
-
-
-    return date.toLocaleString(
-      "en-GB",
-      {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-  }
-
-
-  // --------------------------------
-  // Add note modal
-  // --------------------------------
-
-  addNoteBtn.addEventListener(
-    "click",
-    function () {
-      if (!currentUser) {
-        showStatus(
-          "Please log in first.",
-          "error"
-        );
-
-        return;
-      }
-
-
-      addNoteModal.classList.add(
-        "active"
-      );
-
-      document.body.style.overflow =
-        "hidden";
-    }
-  );
-
-
-  closeModalBtn.addEventListener(
-    "click",
-    closeAddNoteModal
-  );
-
-
-  function closeAddNoteModal() {
-    addNoteModal.classList.remove(
-      "active"
-    );
-
-    document.body.style.overflow =
-      "auto";
-
-    noteForm.reset();
-  }
-
-
-  // --------------------------------
-  // Delete modal
-  // --------------------------------
-
-  cancelDeleteBtn.addEventListener(
-    "click",
-    closeConfirmModal
-  );
-
-
-  confirmDeleteBtn.addEventListener(
-    "click",
-    async function () {
-      if (
-        !currentUser ||
-        !noteToDeleteId
-      ) {
-        closeConfirmModal();
-
         return;
       }
 
@@ -1022,26 +343,30 @@ document.addEventListener("DOMContentLoaded", function () {
       var result =
         await supabaseClient
           .from("notes")
-          .delete()
-          .eq(
-            "id",
-            noteToDeleteId
-          )
+          .select("*")
           .eq(
             "user_id",
             currentUser.id
+          )
+          .order(
+            "created_at",
+            {
+              ascending: false
+            }
           );
 
 
       if (result.error) {
+
         console.error(
-          "Could not delete note:",
+          "LOAD NOTES ERROR:",
           result.error
         );
 
-        alert(
-          "Could not delete note: " +
-            result.error.message
+        status(
+          "Could not load notes: " +
+          result.error.message,
+          true
         );
 
         return;
@@ -1049,40 +374,645 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
       notes =
+        result.data || [];
+
+
+      renderNotes();
+
+    }
+
+
+    // SAVE NOTE
+
+    noteForm.addEventListener(
+      "submit",
+      async function (event) {
+
+        event.preventDefault();
+
+
+        if (!currentUser) {
+
+          status(
+            "Please log in first.",
+            true
+          );
+
+          return;
+        }
+
+
+        var title =
+          document
+            .getElementById("noteTitle")
+            .value
+            .trim();
+
+
+        var content =
+          document
+            .getElementById("noteContent")
+            .value
+            .trim();
+
+
+        var selected =
+          document.querySelector(
+            'input[name="noteTag"]:checked'
+          );
+
+
+        var tag =
+          selected
+            ? selected.value
+            : "ideas";
+
+
+        var result =
+          await supabaseClient
+            .from("notes")
+            .insert(
+              {
+                user_id:
+                  currentUser.id,
+
+                title:
+                  title,
+
+                content:
+                  content,
+
+                tag:
+                  tag
+              }
+            )
+            .select()
+            .single();
+
+
+        if (result.error) {
+
+          console.error(
+            "SAVE NOTE ERROR:",
+            result.error
+          );
+
+          alert(
+            result.error.message
+          );
+
+          return;
+        }
+
+
+        notes.unshift(
+          result.data
+        );
+
+
+        renderNotes();
+
+        closeAddModal();
+
+      }
+    );
+
+
+    // DISPLAY NOTES
+
+    function renderNotes(
+      list
+    ) {
+
+      if (!list) {
+        list = notes;
+      }
+
+
+      notesContainer.innerHTML =
+        "";
+
+
+      list.forEach(
+        function (note) {
+
+          var card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "note-card fade-in";
+
+
+          var content =
+            document.createElement(
+              "div"
+            );
+
+
+          content.className =
+            "note-content";
+
+
+          var header =
+            document.createElement(
+              "div"
+            );
+
+
+          header.className =
+            "note-header";
+
+
+          var title =
+            document.createElement(
+              "h3"
+            );
+
+
+          title.className =
+            "note-title";
+
+          title.textContent =
+            note.title;
+
+
+          var actions =
+            document.createElement(
+              "div"
+            );
+
+
+          actions.className =
+            "note-actions";
+
+
+          var button =
+            document.createElement(
+              "button"
+            );
+
+
+          button.className =
+            "delete-btn";
+
+          button.type =
+            "button";
+
+          button.innerHTML =
+            '<i class="fas fa-trash"></i>';
+
+
+          button.addEventListener(
+            "click",
+            function () {
+
+              deleteId =
+                note.id;
+
+              confirmModal.classList.add(
+                "active"
+              );
+
+            }
+          );
+
+
+          actions.appendChild(
+            button
+          );
+
+
+          header.appendChild(
+            title
+          );
+
+          header.appendChild(
+            actions
+          );
+
+
+          var text =
+            document.createElement(
+              "p"
+            );
+
+
+          text.className =
+            "note-text";
+
+          text.textContent =
+            note.content;
+
+
+          var footer =
+            document.createElement(
+              "div"
+            );
+
+
+          footer.className =
+            "note-footer";
+
+
+          var tag =
+            document.createElement(
+              "span"
+            );
+
+
+          tag.className =
+            "note-tag " +
+            getTagClass(
+              note.tag
+            );
+
+
+          tag.innerHTML =
+            getTagIcon(
+              note.tag
+            ) +
+            " " +
+            getTagName(
+              note.tag
+            );
+
+
+          var date =
+            document.createElement(
+              "span"
+            );
+
+
+          date.className =
+            "note-date";
+
+          date.textContent =
+            formatDate(
+              note.created_at
+            );
+
+
+          footer.appendChild(
+            tag
+          );
+
+          footer.appendChild(
+            date
+          );
+
+
+          content.appendChild(
+            header
+          );
+
+          content.appendChild(
+            text
+          );
+
+          content.appendChild(
+            footer
+          );
+
+
+          card.appendChild(
+            content
+          );
+
+
+          notesContainer.appendChild(
+            card
+          );
+
+        }
+      );
+
+
+      if (list.length === 0) {
+
+        emptyState.style.display =
+          "block";
+
+      } else {
+
+        emptyState.style.display =
+          "none";
+      }
+
+    }
+
+
+    // DELETE
+
+    confirmDeleteBtn.addEventListener(
+      "click",
+      async function () {
+
+        if (!deleteId || !currentUser) {
+          return;
+        }
+
+
+        var result =
+          await supabaseClient
+            .from("notes")
+            .delete()
+            .eq(
+              "id",
+              deleteId
+            )
+            .eq(
+              "user_id",
+              currentUser.id
+            );
+
+
+        if (result.error) {
+
+          console.error(
+            "DELETE ERROR:",
+            result.error
+          );
+
+          alert(
+            result.error.message
+          );
+
+          return;
+        }
+
+
+        notes =
+          notes.filter(
+            function (note) {
+              return (
+                note.id !==
+                deleteId
+              );
+            }
+          );
+
+
+        deleteId = null;
+
+        confirmModal.classList.remove(
+          "active"
+        );
+
+
+        renderNotes();
+
+      }
+    );
+
+
+    cancelDeleteBtn.addEventListener(
+      "click",
+      function () {
+
+        deleteId = null;
+
+        confirmModal.classList.remove(
+          "active"
+        );
+
+      }
+    );
+
+
+    // ADD NOTE BUTTON
+
+    addNoteBtn.addEventListener(
+      "click",
+      function () {
+
+        if (!currentUser) {
+
+          status(
+            "Please log in first.",
+            true
+          );
+
+          return;
+        }
+
+
+        addNoteModal.classList.add(
+          "active"
+        );
+
+      }
+    );
+
+
+    closeModalBtn.addEventListener(
+      "click",
+      closeAddModal
+    );
+
+
+    function closeAddModal() {
+
+      addNoteModal.classList.remove(
+        "active"
+      );
+
+      noteForm.reset();
+
+    }
+
+
+    // SEARCH AND FILTER
+
+    searchInput.addEventListener(
+      "input",
+      filterNotes
+    );
+
+
+    filterSelect.addEventListener(
+      "change",
+      filterNotes
+    );
+
+
+    function filterNotes() {
+
+      var search =
+        searchInput.value
+          .toLowerCase()
+          .trim();
+
+
+      var filter =
+        filterSelect.value;
+
+
+      var filtered =
         notes.filter(
           function (note) {
+
+            var matchesSearch =
+              !search ||
+              note.title
+                .toLowerCase()
+                .includes(search) ||
+              note.content
+                .toLowerCase()
+                .includes(search);
+
+
+            var matchesFilter =
+              filter === "all" ||
+              note.tag === filter;
+
+
             return (
-              note.id !==
-              noteToDeleteId
+              matchesSearch &&
+              matchesFilter
             );
+
           }
         );
 
 
-      closeConfirmModal();
+      renderNotes(
+        filtered
+      );
 
-      renderNotes();
-
-      updateEmptyState();
     }
-  );
 
 
-  function closeConfirmModal() {
-    confirmModal.classList.remove(
-      "active"
-    );
+    // TAG HELPERS
 
-    document.body.style.overflow =
-      "auto";
+    function getTagClass(tag) {
 
-    noteToDeleteId = null;
+      var classes = {
+        school: "tag-school",
+        random: "tag-random",
+        ideas: "tag-ideas",
+        reminders: "tag-reminders"
+      };
+
+
+      return (
+        classes[tag] || ""
+      );
+
+    }
+
+
+    function getTagIcon(tag) {
+
+      var icons = {
+        school:
+          '<i class="fas fa-briefcase"></i>',
+
+        random:
+          '<i class="fas fa-user"></i>',
+
+        ideas:
+          '<i class="fas fa-lightbulb"></i>',
+
+        reminders:
+          '<i class="fas fa-bell"></i>'
+      };
+
+
+      return (
+        icons[tag] || ""
+      );
+
+    }
+
+
+    function getTagName(tag) {
+
+      var names = {
+        school: "School",
+        random: "Random",
+        ideas: "Ideas",
+        reminders: "Reminders"
+      };
+
+
+      return (
+        names[tag] || tag
+      );
+
+    }
+
+
+    function formatDate(
+      value
+    ) {
+
+      if (!value) {
+        return "";
+      }
+
+
+      return new Date(
+        value
+      ).toLocaleString(
+        "en-GB",
+        {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }
+      );
+
+    }
+
+
+    // CHECK EXISTING SESSION
+
+    async function checkSession() {
+
+      var result =
+        await supabaseClient.auth.getSession();
+
+
+      if (result.error) {
+
+        console.error(
+          "SESSION ERROR:",
+          result.error
+        );
+
+        return;
+      }
+
+
+      if (result.data.session) {
+
+        currentUser =
+          result.data.session.user;
+
+        loggedIn();
+
+        status(
+          "Logged in as " +
+          currentUser.email
+        );
+
+        await loadNotes();
+
+      } else {
+
+        loggedOut();
+
+      }
+
+    }
+
+
+    checkSession();
+
   }
-
-
-  // --------------------------------
-  // Start
-  // --------------------------------
-
-  checkSession();
-});
+);
