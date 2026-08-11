@@ -332,7 +332,7 @@ notesToRender.forEach((note) => {
   const title = escapeHtml(note.title);
   const content = escapeHtml(note.content);
 
-  noteElement.innerHTML = 
+  noteElement.innerHTML = `
     <div class="note-content">
       <div class="note-header">
         <h3 class="note-title">${title}</h3>
