@@ -64,8 +64,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function getTagClass(tag) {
         const classes = {
-            work: "tag-work",
-            personal: "tag-personal",
+            work: "tag-school",
+            personal: "tag-random",
             ideas: "tag-ideas",
             reminders: "tag-reminders",
         };
@@ -74,8 +74,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function getTagIcon(tag) {
         const icons = {
-            work: '<i class="fas fa-briefcase"></i>',
-            personal: '<i class="fas fa-user"></i>',
+            school: '<i class="fas fa-briefcase"></i>',
+            random: '<i class="fas fa-user"></i>',
             ideas: '<i class="fas fa-lightbulb"></i>',
             reminders: '<i class="fas fa-bell"></i>',
         };
@@ -84,8 +84,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function getTagName(tag) {
         const names = {
-            work: "Work",
-            personal: "Personal",
+            school: "School",
+            random: "Random",
             ideas: "Ideas",
             reminders: "Reminders",
         };
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function formatDate(dateString) {
         const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
+        return date.toLocaleDateString("en-UK", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
