@@ -1,16 +1,17 @@
-
 const SUPABASE_URL = "https://wrfsbvklvxngamyyibrr.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
 "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo";
 
-const { createClient } = window.supabase;
-
-const supabaseClient = createClient(
+const supabaseClient = window.supabase.createClient(
 SUPABASE_URL,
 SUPABASE_PUBLISHABLE_KEY
 );
 
-document.addEventListener("DOMContentLoaded", async function () { 
+document.addEventListener("DOMContentLoaded", function () {
+// -----------------------------
+// Get elements
+// -----------------------------
+
 const notesContainer = document.getElementById("notesContainer");
 const addNoteBtn = document.getElementById("addNoteBtn");
 const addNoteModal = document.getElementById("addNoteModal");
@@ -19,6 +20,7 @@ const noteForm = document.getElementById("noteForm");
 const searchInput = document.getElementById("searchInput");
 const filterSelect = document.getElementById("filterSelect");
 const emptyState = document.getElementById("emptyState");
+
 const confirmModal = document.getElementById("confirmModal");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
@@ -36,111 +38,52 @@ let noteToDeleteId = null;
 let currentUser = null;
 
 // -----------------------------
+// Check required elements
+// -----------------------------
+
+if (
+!notesContainer ||
+!addNoteBtn ||
+!noteForm ||
+!emailInput ||
+!passwordInput ||
+!loginBtn ||
+!signupBtn ||
+!logoutBtn
+) {
+console.error(
+"Some required HTML elements are missing. Make sure you replaced index.html with the Supabase version."
+);
+return;
+}
+
+// -----------------------------
 // Authentication
 // -----------------------------
 
-loginBtn.addEventListener("click", login);
-signupBtn.addEventListener("click", signUp);
-logoutBtn.addEventListener("click", logout);
-
-async function signUp() {
-const email = emailInput.value.trim();
-const password = passwordInput.value;
-
-
-if (!email || !password) {
-  setAuthStatus("Enter an email and password.", "error");
-  return;
-}
-
-if (password.length < 6) {
-  setAuthStatus(
-    "Password must be at least 6 characters.",
-    "error"
-  );
-  return;
-}
-
-setAuthStatus("Creating your account...");
-
-const { data, error } = await supabaseClient.auth.signUp({
-  email,
-  password,
+signupBtn.addEventListener("click", function () {
+signUp();
 });
 
-if (error) {
-  setAuthStatus(error.message, "error");
-  return;
+loginBtn.addEventListener("click", function () {
+logIn();
+});
+
+logoutBtn.addEventListener("click", function () {
+logOut();
+});
+
+passwordInput.addEventListener("keydown", function (event) {
+if (event.key === "Enter") {
+logIn();
 }
+});
 
-if (data.session) {
-  setAuthStatus("Account created!", "success");
-} else {
-  setAuthStatus(
-    "Account created. Check your email to confirm your account.",
-    "success"
-  );
-}
-
-
-}
-
-async function login() {
-const email = emailInput.value.trim();
-const password = passwordInput.value;
-
-
-if (!email || !password) {
-  setAuthStatus("Enter your email and password.", "error");
-  return;
-}
-
-setAuthStatus("Logging in...");
-
-const { data, error } =
-  await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-if (error) {
-  setAuthStatus(error.message, "error");
-  return;
-}
-
-currentUser = data.user;
-await handleLoggedInUser();
-
-
-}
-
-async function logout() {
-await supabaseClient.auth.signOut();
-
-
-currentUser = null;
-notes = [];
-
-renderNotes();
-updateEmptyState();
-
-appContent.classList.add("logged-out");
-
-emailInput.style.display = "";
-passwordInput.style.display = "";
-loginBtn.style.display = "";
-signupBtn.style.display = "";
-logoutBtn.style.display = "none";
-
-setAuthStatus("You have been logged out.");
-
-}
-
-function setAuthStatus(message, type = "") {
+function setAuthStatus(message, type) {
 authStatus.textContent = message;
 authStatus.className = "auth-status";
 
-
+```
 if (type === "error") {
   authStatus.classList.add("auth-error");
 }
@@ -148,262 +91,639 @@ if (type === "error") {
 if (type === "success") {
   authStatus.classList.add("auth-success");
 }
-
+```
 
 }
 
-async function handleLoggedInUser() {
-if (!currentUser) return;
+async function signUp() {
+const email = emailInput.value.trim();
+const password = passwordInput.value;
 
+```
+if (!email) {
+  setAuthStatus("Please enter your email.", "error");
+  return;
+}
 
+if (!password) {
+  setAuthStatus("Please enter a password.", "error");
+  return;
+}
+
+if (password.length < 6) {
+  setAuthStatus(
+    "Your password must be at least 6 characters.",
+    "error"
+  );
+  return;
+}
+
+signupBtn.disabled = true;
+loginBtn.disabled = true;
+
+setAuthStatus("Creating your account...");
+
+try {
+  const result = await supabaseClient.auth.signUp({
+    email: email,
+    password: password
+  });
+
+  if (result.error) {
+    console.error("Supabase signup error:", result.error);
+    setAuthStatus(result.error.message, "error");
+    return;
+  }
+
+  if (result.data.session) {
+    setAuthStatus(
+      "Account created! You are now logged in.",
+      "success"
+    );
+
+    currentUser = result.data.user;
+    showLoggedInState();
+    await loadNotes();
+    await migrateOldNotes();
+  } else {
+    setAuthStatus(
+      "Account created! Check your email to confirm your account, then log in.",
+      "success"
+    );
+  }
+} catch (error) {
+  console.error("Signup error:", error);
+  setAuthStatus(
+    "Something went wrong while creating your account.",
+    "error"
+  );
+} finally {
+  signupBtn.disabled = false;
+  loginBtn.disabled = false;
+}
+```
+
+}
+
+async function logIn() {
+const email = emailInput.value.trim();
+const password = passwordInput.value;
+
+```
+if (!email || !password) {
+  setAuthStatus(
+    "Enter your email and password.",
+    "error"
+  );
+  return;
+}
+
+loginBtn.disabled = true;
+signupBtn.disabled = true;
+
+setAuthStatus("Logging in...");
+
+try {
+  const result = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (result.error) {
+    console.error("Supabase login error:", result.error);
+    setAuthStatus(result.error.message, "error");
+    return;
+  }
+
+  currentUser = result.data.user;
+
+  showLoggedInState();
+
+  setAuthStatus(
+    "Logged in as " + currentUser.email,
+    "success"
+  );
+
+  await loadNotes();
+  await migrateOldNotes();
+} catch (error) {
+  console.error("Login error:", error);
+  setAuthStatus(
+    "Something went wrong while logging in.",
+    "error"
+  );
+} finally {
+  loginBtn.disabled = false;
+  signupBtn.disabled = false;
+}
+```
+
+}
+
+async function logOut() {
+const result = await supabaseClient.auth.signOut();
+
+```
+if (result.error) {
+  console.error("Logout error:", result.error);
+  return;
+}
+
+currentUser = null;
+notes = [];
+
+renderNotes();
+updateEmptyState();
+
+emailInput.value = "";
+passwordInput.value = "";
+
+emailInput.style.display = "";
+passwordInput.style.display = "";
+loginBtn.style.display = "";
+signupBtn.style.display = "";
+logoutBtn.style.display = "none";
+
+appContent.classList.add("logged-out");
+
+setAuthStatus("You have been logged out.");
+```
+
+}
+
+function showLoggedInState() {
 emailInput.style.display = "none";
 passwordInput.style.display = "none";
 loginBtn.style.display = "none";
 signupBtn.style.display = "none";
 logoutBtn.style.display = "";
 
+```
 appContent.classList.remove("logged-out");
-
-setAuthStatus(
-  `Logged in as ${currentUser.email}`,
-  "success"
-);
-
-await loadNotes();
-await migrateLocalNotes();
+```
 
 }
 
-// Check whether someone is already logged in.
-const {
-data: { session },
-} = await supabaseClient.auth.getSession();
+// -----------------------------
+// Existing session
+// -----------------------------
 
-if (session) {
-currentUser = session.user;
-await handleLoggedInUser();
+async function checkExistingSession() {
+try {
+const result = await supabaseClient.auth.getSession();
+
+```
+  if (result.error) {
+    console.error("Session error:", result.error);
+    return;
+  }
+
+  if (result.data.session) {
+    currentUser = result.data.session.user;
+
+    showLoggedInState();
+
+    setAuthStatus(
+      "Logged in as " + currentUser.email,
+      "success"
+    );
+
+    await loadNotes();
+    await migrateOldNotes();
+  }
+} catch (error) {
+  console.error("Session check error:", error);
+}
+```
+
 }
 
-// React to login/logout changes.
-supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+supabaseClient.auth.onAuthStateChange(function (event, session) {
 if (session && session.user) {
 currentUser = session.user;
-await handleLoggedInUser();
 } else {
 currentUser = null;
 }
 });
 
 // -----------------------------
-// Notes
+// Load notes from Supabase
 // -----------------------------
 
-addNoteBtn.addEventListener("click", openAddNoteModal);
-closeModalBtn.addEventListener("click", closeAddNoteModal);
-noteForm.addEventListener("submit", handleNoteSubmit);
-
-searchInput.addEventListener("input", filterNotes);
-filterSelect.addEventListener("change", filterNotes);
-
-cancelDeleteBtn.addEventListener("click", closeConfirmModal);
-confirmDeleteBtn.addEventListener("click", confirmDeleteNote);
-
 async function loadNotes() {
-if (!currentUser) return;
+if (!currentUser) {
+return;
+}
 
-
-const { data, error } = await supabaseClient
+```
+const result = await supabaseClient
   .from("notes")
   .select("*")
   .eq("user_id", currentUser.id)
   .order("created_at", { ascending: false });
 
-if (error) {
-  console.error("Error loading notes:", error);
+if (result.error) {
+  console.error("Could not load notes:", result.error);
+
   setAuthStatus(
-    "Could not load your notes: " + error.message,
+    "Could not load your notes: " + result.error.message,
+    "error"
+  );
+
+  return;
+}
+
+notes = result.data || [];
+
+renderNotes();
+updateEmptyState();
+```
+
+}
+
+// -----------------------------
+// Add note
+// -----------------------------
+
+noteForm.addEventListener("submit", async function (event) {
+event.preventDefault();
+
+```
+if (!currentUser) {
+  setAuthStatus(
+    "Please log in before creating a note.",
     "error"
   );
   return;
 }
 
-notes = data || [];
+const title = document
+  .getElementById("noteTitle")
+  .value
+  .trim();
 
-renderNotes();
-updateEmptyState();
-
-
-}
-
-async function handleNoteSubmit(e) {
-e.preventDefault();
-
-
-if (!currentUser) {
-  setAuthStatus("Please log in first.", "error");
-  return;
-}
-
-const title = document.getElementById("noteTitle").value.trim();
 const content = document
   .getElementById("noteContent")
-  .value.trim();
+  .value
+  .trim();
 
 const selectedTag = document.querySelector(
   'input[name="noteTag"]:checked'
 );
 
-const tag = selectedTag ? selectedTag.value : "ideas";
+const tag = selectedTag
+  ? selectedTag.value
+  : "ideas";
 
 if (!title || !content) {
   return;
 }
 
-const { data, error } = await supabaseClient
+const submitButton = noteForm.querySelector(
+  'button[type="submit"]'
+);
+
+if (submitButton) {
+  submitButton.disabled = true;
+}
+
+const result = await supabaseClient
   .from("notes")
   .insert({
     user_id: currentUser.id,
-    title,
-    content,
-    tag,
+    title: title,
+    content: content,
+    tag: tag
   })
   .select()
   .single();
 
-if (error) {
-  console.error("Error saving note:", error);
-  alert("Could not save note: " + error.message);
+if (submitButton) {
+  submitButton.disabled = false;
+}
+
+if (result.error) {
+  console.error("Could not save note:", result.error);
+
+  alert(
+    "Could not save your note: " +
+      result.error.message
+  );
+
   return;
 }
 
-notes.unshift(data);
+notes.unshift(result.data);
 
 renderNotes();
 updateEmptyState();
 
 closeAddNoteModal();
 filterNotes();
+```
 
+});
 
-}
+// -----------------------------
+// Delete note
+// -----------------------------
 
-async function confirmDeleteNote() {
-if (!noteToDeleteId || !currentUser) {
+confirmDeleteBtn.addEventListener(
+"click",
+async function () {
+if (!currentUser || !noteToDeleteId) {
 closeConfirmModal();
 return;
 }
 
+```
+  const result = await supabaseClient
+    .from("notes")
+    .delete()
+    .eq("id", noteToDeleteId)
+    .eq("user_id", currentUser.id);
 
-const { error } = await supabaseClient
-  .from("notes")
-  .delete()
-  .eq("id", noteToDeleteId)
-  .eq("user_id", currentUser.id);
+  if (result.error) {
+    console.error(
+      "Could not delete note:",
+      result.error
+    );
 
-if (error) {
-  console.error("Error deleting note:", error);
-  alert("Could not delete note: " + error.message);
-  return;
+    alert(
+      "Could not delete your note: " +
+        result.error.message
+    );
+
+    return;
+  }
+
+  notes = notes.filter(function (note) {
+    return note.id !== noteToDeleteId;
+  });
+
+  renderNotes();
+  updateEmptyState();
+  filterNotes();
+
+  closeConfirmModal();
 }
+```
 
-notes = notes.filter((note) => note.id !== noteToDeleteId);
-
-renderNotes();
-updateEmptyState();
-filterNotes();
-
-closeConfirmModal();
-
-
-}
+);
 
 // -----------------------------
-// Display
+// Render notes
 // -----------------------------
 
-function renderNotes(notesToRender = notes) {
+function renderNotes(notesToRender) {
+if (!notesToRender) {
+notesToRender = notes;
+}
+
+```
 notesContainer.innerHTML = "";
 
+notesToRender.forEach(function (note) {
+  const noteElement =
+    document.createElement("div");
 
-notesToRender.forEach((note) => {
-  const noteElement = document.createElement("div");
   noteElement.className = "note-card fade-in";
 
-  const title = escapeHtml(note.title);
-  const content = escapeHtml(note.content);
+  const noteContent =
+    document.createElement("div");
 
-  noteElement.innerHTML = `
-    <div class="note-content">
-      <div class="note-header">
-        <h3 class="note-title">${title}</h3>
+  noteContent.className = "note-content";
 
-        <div class="note-actions">
-          <button
-            class="delete-btn"
-            data-id="${note.id}"
-            aria-label="Delete note"
-          >
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      </div>
+  const noteHeader =
+    document.createElement("div");
 
-      <p class="note-text">${content}</p>
+  noteHeader.className = "note-header";
 
-      <div class="note-footer">
-        <span class="note-tag ${getTagClass(note.tag)}">
-          ${getTagIcon(note.tag)}
-          ${getTagName(note.tag)}
-        </span>
+  const title =
+    document.createElement("h3");
 
-        <span class="note-date">
-          ${formatDate(note.created_at)}
-        </span>
-      </div>
-    </div>
-  `;
+  title.className = "note-title";
+  title.textContent = note.title;
 
+  const actions =
+    document.createElement("div");
+
+  actions.className = "note-actions";
+
+  const deleteButton =
+    document.createElement("button");
+
+  deleteButton.className = "delete-btn";
+  deleteButton.setAttribute(
+    "aria-label",
+    "Delete note"
+  );
+
+  deleteButton.innerHTML =
+    '<i class="fas fa-trash"></i>';
+
+  deleteButton.addEventListener(
+    "click",
+    function () {
+      noteToDeleteId = note.id;
+      openConfirmModal();
+    }
+  );
+
+  actions.appendChild(deleteButton);
+
+  noteHeader.appendChild(title);
+  noteHeader.appendChild(actions);
+
+  const content =
+    document.createElement("p");
+
+  content.className = "note-text";
+  content.textContent = note.content;
+
+  const footer =
+    document.createElement("div");
+
+  footer.className = "note-footer";
+
+  const tag =
+    document.createElement("span");
+
+  tag.className =
+    "note-tag " + getTagClass(note.tag);
+
+  tag.innerHTML =
+    getTagIcon(note.tag) +
+    " " +
+    getTagName(note.tag);
+
+  const date =
+    document.createElement("span");
+
+  date.className = "note-date";
+  date.textContent =
+    formatDate(note.created_at);
+
+  footer.appendChild(tag);
+  footer.appendChild(date);
+
+  noteContent.appendChild(noteHeader);
+  noteContent.appendChild(content);
+  noteContent.appendChild(footer);
+
+  noteElement.appendChild(noteContent);
   notesContainer.appendChild(noteElement);
 });
-
-document.querySelectorAll(".delete-btn").forEach((btn) => {
-  btn.addEventListener("click", function () {
-    noteToDeleteId = this.getAttribute("data-id");
-    openConfirmModal();
-  });
-});
+```
 
 }
 
-function filterNotes() {
-const searchTerm = searchInput.value.toLowerCase().trim();
-const filterValue = filterSelect.value;
+// -----------------------------
+// Search and filters
+// -----------------------------
 
-let filteredNotes = [...notes];
+searchInput.addEventListener(
+"input",
+filterNotes
+);
+
+filterSelect.addEventListener(
+"change",
+filterNotes
+);
+
+function filterNotes() {
+const searchTerm =
+searchInput.value.toLowerCase().trim();
+
+```
+const filterValue =
+  filterSelect.value;
+
+let filteredNotes = notes.slice();
 
 if (searchTerm) {
-  filteredNotes = filteredNotes.filter(
-    (note) =>
-      note.title.toLowerCase().includes(searchTerm) ||
-      note.content.toLowerCase().includes(searchTerm)
-  );
+  filteredNotes =
+    filteredNotes.filter(function (note) {
+      return (
+        note.title
+          .toLowerCase()
+          .includes(searchTerm) ||
+        note.content
+          .toLowerCase()
+          .includes(searchTerm)
+      );
+    });
 }
 
 if (filterValue !== "all") {
-  filteredNotes = filteredNotes.filter(
-    (note) => note.tag === filterValue
-  );
+  filteredNotes =
+    filteredNotes.filter(function (note) {
+      return note.tag === filterValue;
+    });
 }
 
 renderNotes(filteredNotes);
 updateEmptyState(filteredNotes);
-
+```
 
 }
 
 // -----------------------------
-// Modals
+// Tags
 // -----------------------------
+
+function getTagClass(tag) {
+const classes = {
+school: "tag-school",
+random: "tag-random",
+ideas: "tag-ideas",
+reminders: "tag-reminders"
+};
+
+```
+return classes[tag] || "";
+```
+
+}
+
+function getTagIcon(tag) {
+const icons = {
+school: '<i class="fas fa-briefcase"></i>',
+random: '<i class="fas fa-user"></i>',
+ideas: '<i class="fas fa-lightbulb"></i>',
+reminders: '<i class="fas fa-bell"></i>'
+};
+
+```
+return icons[tag] || "";
+```
+
+}
+
+function getTagName(tag) {
+const names = {
+school: "School",
+random: "Random",
+ideas: "Ideas",
+reminders: "Reminders"
+};
+
+```
+return names[tag] || tag;
+```
+
+}
+
+// -----------------------------
+// Dates
+// -----------------------------
+
+function formatDate(dateString) {
+if (!dateString) {
+return "";
+}
+
+```
+const date = new Date(dateString);
+
+return date.toLocaleString("en-GB", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit"
+});
+```
+
+}
+
+// -----------------------------
+// Add note modal
+// -----------------------------
+
+addNoteBtn.addEventListener(
+"click",
+function () {
+if (!currentUser) {
+setAuthStatus(
+"Please log in first.",
+"error"
+);
+return;
+}
+
+```
+  openAddNoteModal();
+}
+```
+
+);
+
+closeModalBtn.addEventListener(
+"click",
+closeAddNoteModal
+);
 
 function openAddNoteModal() {
 addNoteModal.classList.add("active");
@@ -415,6 +735,15 @@ addNoteModal.classList.remove("active");
 document.body.style.overflow = "auto";
 noteForm.reset();
 }
+
+// -----------------------------
+// Delete confirmation modal
+// -----------------------------
+
+cancelDeleteBtn.addEventListener(
+"click",
+closeConfirmModal
+);
 
 function openConfirmModal() {
 confirmModal.classList.add("active");
@@ -428,159 +757,141 @@ noteToDeleteId = null;
 }
 
 // -----------------------------
-// Helpers
+// Empty state
 // -----------------------------
 
-function getTagClass(tag) {
-const classes = {
-school: "tag-school",
-random: "tag-random",
-ideas: "tag-ideas",
-reminders: "tag-reminders",
-};
-
-
-return classes[tag] || "";
-
+function updateEmptyState(notesToCheck) {
+if (!notesToCheck) {
+notesToCheck = notes;
 }
 
-function getTagIcon(tag) {
-const icons = {
-school: '<i class="fas fa-briefcase"></i>',
-random: '<i class="fas fa-user"></i>',
-ideas: '<i class="fas fa-lightbulb"></i>',
-reminders: '<i class="fas fa-bell"></i>',
-};
-
-return icons[tag] || "";
-
-
-}
-
-function getTagName(tag) {
-const names = {
-school: "School",
-random: "Random",
-ideas: "Ideas",
-reminders: "Reminders",
-};
-
-
-return names[tag] || tag;
-
-
-}
-
-function formatDate(dateString) {
-if (!dateString) return "";
-
-
-const date = new Date(dateString);
-
-return date.toLocaleString("en-GB", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-
-}
-
-function updateEmptyState(notesToCheck = notes) {
-if (!notesToCheck || notesToCheck.length === 0) {
-emptyState.style.display = "block";
+```
+if (notesToCheck.length === 0) {
+  emptyState.style.display = "block";
 } else {
-emptyState.style.display = "none";
+  emptyState.style.display = "none";
 }
-}
+```
 
-function escapeHtml(value) {
-const div = document.createElement("div");
-div.textContent = value ?? "";
-return div.innerHTML;
 }
 
 // -----------------------------
 // Import old localStorage notes
 // -----------------------------
 
-async function migrateLocalNotes() {
-if (!currentUser) return;
+async function migrateOldNotes() {
+if (!currentUser) {
+return;
+}
 
+```
+const migrationKey =
+  "supabaseNotesMigrated_" +
+  currentUser.id;
 
-const migrationKey = `supabaseNotesMigrated_${currentUser.id}`;
-
-if (localStorage.getItem(migrationKey) === "true") {
+if (
+  localStorage.getItem(migrationKey) ===
+  "true"
+) {
   return;
 }
 
 let oldNotes = [];
 
 try {
-  oldNotes = JSON.parse(
-    localStorage.getItem("notes") || "[]"
-  );
+  const storedNotes =
+    localStorage.getItem("notes");
+
+  if (storedNotes) {
+    oldNotes = JSON.parse(storedNotes);
+  }
 } catch (error) {
-  console.error("Could not read old notes:", error);
+  console.error(
+    "Could not read old local notes:",
+    error
+  );
+
   return;
 }
 
-if (!Array.isArray(oldNotes) || oldNotes.length === 0) {
-  localStorage.setItem(migrationKey, "true");
+if (
+  !Array.isArray(oldNotes) ||
+  oldNotes.length === 0
+) {
+  localStorage.setItem(
+    migrationKey,
+    "true"
+  );
+
   return;
 }
 
-const { data: existingNotes, error: existingError } =
+const existingResult =
   await supabaseClient
     .from("notes")
     .select("id")
     .eq("user_id", currentUser.id)
     .limit(1);
 
-if (existingError) {
+if (existingResult.error) {
   console.error(
-    "Could not check existing notes:",
-    existingError
+    "Could not check existing cloud notes:",
+    existingResult.error
   );
+
   return;
 }
 
-// Only import local notes if this account has no cloud notes yet.
-if (existingNotes && existingNotes.length > 0) {
-  localStorage.setItem(migrationKey, "true");
+if (
+  existingResult.data &&
+  existingResult.data.length > 0
+) {
+  localStorage.setItem(
+    migrationKey,
+    "true"
+  );
+
   return;
 }
 
-const notesToInsert = oldNotes.map((note) => ({
-  user_id: currentUser.id,
-  title: note.title || "Untitled",
-  content: note.content || "",
-  tag: [
-    "school",
-    "random",
-    "ideas",
-    "reminders",
-  ].includes(note.tag)
-    ? note.tag
-    : "ideas",
-  created_at: note.date || new Date().toISOString(),
-}));
+const notesToImport =
+  oldNotes.map(function (note) {
+    return {
+      user_id: currentUser.id,
+      title: note.title || "Untitled",
+      content: note.content || "",
+      tag: [
+        "school",
+        "random",
+        "ideas",
+        "reminders"
+      ].includes(note.tag)
+        ? note.tag
+        : "ideas",
+      created_at:
+        note.date ||
+        new Date().toISOString()
+    };
+  });
 
-const { error: insertError } = await supabaseClient
-  .from("notes")
-  .insert(notesToInsert);
+const importResult =
+  await supabaseClient
+    .from("notes")
+    .insert(notesToImport);
 
-if (insertError) {
+if (importResult.error) {
   console.error(
-    "Could not migrate old notes:",
-    insertError
+    "Could not import old notes:",
+    importResult.error
   );
+
   return;
 }
 
-localStorage.setItem(migrationKey, "true");
+localStorage.setItem(
+  migrationKey,
+  "true"
+);
 
 await loadNotes();
 
@@ -588,6 +899,13 @@ setAuthStatus(
   "Your old notes were imported successfully.",
   "success"
 );
+```
 
 }
+
+// -----------------------------
+// Start the application
+// -----------------------------
+
+checkExistingSession();
 });
