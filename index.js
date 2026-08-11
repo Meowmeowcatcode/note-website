@@ -1,3 +1,4 @@
+
 const SUPABASE_URL = "https://wrfsbvklvxngamyyibrr.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
 "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo";
@@ -9,7 +10,7 @@ SUPABASE_URL,
 SUPABASE_PUBLISHABLE_KEY
 );
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () { 
 const notesContainer = document.getElementById("notesContainer");
 const addNoteBtn = document.getElementById("addNoteBtn");
 const addNoteModal = document.getElementById("addNoteModal");
