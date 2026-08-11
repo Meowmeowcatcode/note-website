@@ -361,7 +361,7 @@ notesToRender.forEach((note) => {
         </span>
       </div>
     </div>
-  ;
+  `;
 
   notesContainer.appendChild(noteElement);
 });
