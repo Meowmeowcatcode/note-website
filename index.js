@@ -46,7 +46,7 @@ async function signUp() {
 const email = emailInput.value.trim();
 const password = passwordInput.value;
 
-```
+
 if (!email || !password) {
   setAuthStatus("Enter an email and password.", "error");
   return;
@@ -80,7 +80,7 @@ if (data.session) {
     "success"
   );
 }
-```
+
 
 }
 
@@ -88,7 +88,7 @@ async function login() {
 const email = emailInput.value.trim();
 const password = passwordInput.value;
 
-```
+
 if (!email || !password) {
   setAuthStatus("Enter your email and password.", "error");
   return;
@@ -109,14 +109,14 @@ if (error) {
 
 currentUser = data.user;
 await handleLoggedInUser();
-```
+
 
 }
 
 async function logout() {
 await supabaseClient.auth.signOut();
 
-```
+
 currentUser = null;
 notes = [];
 
@@ -132,7 +132,6 @@ signupBtn.style.display = "";
 logoutBtn.style.display = "none";
 
 setAuthStatus("You have been logged out.");
-```
 
 }
 
@@ -140,7 +139,7 @@ function setAuthStatus(message, type = "") {
 authStatus.textContent = message;
 authStatus.className = "auth-status";
 
-```
+
 if (type === "error") {
   authStatus.classList.add("auth-error");
 }
@@ -148,14 +147,14 @@ if (type === "error") {
 if (type === "success") {
   authStatus.classList.add("auth-success");
 }
-```
+
 
 }
 
 async function handleLoggedInUser() {
 if (!currentUser) return;
 
-```
+
 emailInput.style.display = "none";
 passwordInput.style.display = "none";
 loginBtn.style.display = "none";
@@ -171,7 +170,6 @@ setAuthStatus(
 
 await loadNotes();
 await migrateLocalNotes();
-```
 
 }
 
@@ -212,7 +210,7 @@ confirmDeleteBtn.addEventListener("click", confirmDeleteNote);
 async function loadNotes() {
 if (!currentUser) return;
 
-```
+
 const { data, error } = await supabaseClient
   .from("notes")
   .select("*")
@@ -232,14 +230,14 @@ notes = data || [];
 
 renderNotes();
 updateEmptyState();
-```
+
 
 }
 
 async function handleNoteSubmit(e) {
 e.preventDefault();
 
-```
+
 if (!currentUser) {
   setAuthStatus("Please log in first.", "error");
   return;
@@ -284,7 +282,7 @@ updateEmptyState();
 
 closeAddNoteModal();
 filterNotes();
-```
+
 
 }
 
@@ -294,7 +292,7 @@ closeConfirmModal();
 return;
 }
 
-```
+
 const { error } = await supabaseClient
   .from("notes")
   .delete()
@@ -314,7 +312,7 @@ updateEmptyState();
 filterNotes();
 
 closeConfirmModal();
-```
+
 
 }
 
@@ -325,7 +323,7 @@ closeConfirmModal();
 function renderNotes(notesToRender = notes) {
 notesContainer.innerHTML = "";
 
-```
+
 notesToRender.forEach((note) => {
   const noteElement = document.createElement("div");
   noteElement.className = "note-card fade-in";
@@ -333,7 +331,7 @@ notesToRender.forEach((note) => {
   const title = escapeHtml(note.title);
   const content = escapeHtml(note.content);
 
-  noteElement.innerHTML = `
+  noteElement.innerHTML = 
     <div class="note-content">
       <div class="note-header">
         <h3 class="note-title">${title}</h3>
@@ -362,7 +360,7 @@ notesToRender.forEach((note) => {
         </span>
       </div>
     </div>
-  `;
+  ;
 
   notesContainer.appendChild(noteElement);
 });
@@ -373,7 +371,6 @@ document.querySelectorAll(".delete-btn").forEach((btn) => {
     openConfirmModal();
   });
 });
-```
 
 }
 
@@ -381,7 +378,6 @@ function filterNotes() {
 const searchTerm = searchInput.value.toLowerCase().trim();
 const filterValue = filterSelect.value;
 
-```
 let filteredNotes = [...notes];
 
 if (searchTerm) {
@@ -400,7 +396,7 @@ if (filterValue !== "all") {
 
 renderNotes(filteredNotes);
 updateEmptyState(filteredNotes);
-```
+
 
 }
 
@@ -442,9 +438,8 @@ ideas: "tag-ideas",
 reminders: "tag-reminders",
 };
 
-```
+
 return classes[tag] || "";
-```
 
 }
 
@@ -456,9 +451,8 @@ ideas: '<i class="fas fa-lightbulb"></i>',
 reminders: '<i class="fas fa-bell"></i>',
 };
 
-```
 return icons[tag] || "";
-```
+
 
 }
 
@@ -470,16 +464,16 @@ ideas: "Ideas",
 reminders: "Reminders",
 };
 
-```
+
 return names[tag] || tag;
-```
+
 
 }
 
 function formatDate(dateString) {
 if (!dateString) return "";
 
-```
+
 const date = new Date(dateString);
 
 return date.toLocaleString("en-GB", {
@@ -489,7 +483,7 @@ return date.toLocaleString("en-GB", {
   hour: "2-digit",
   minute: "2-digit",
 });
-```
+
 
 }
 
@@ -514,7 +508,7 @@ return div.innerHTML;
 async function migrateLocalNotes() {
 if (!currentUser) return;
 
-```
+
 const migrationKey = `supabaseNotesMigrated_${currentUser.id}`;
 
 if (localStorage.getItem(migrationKey) === "true") {
