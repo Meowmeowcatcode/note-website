@@ -1,7 +1,7 @@
 var board;
 var score = 0;
-var rows = 4;
-var columns = 4;
+var rows = 5;
+var columns = 5;
 
 window.onload = function() {
     setGame();
