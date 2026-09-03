@@ -1,195 +1,124 @@
 var SUPABASE_URL = "https://wrfsbvklvxngamyyibrr.supabase.co";
-
 var SUPABASE_KEY =
   "sb_publishable_IGLKqmkWcGvnqyknOmwsIw_6gCrqZMo";
-
 var supabaseClient =
   window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
   );
-
-
 document.addEventListener(
   "DOMContentLoaded",
   function () {
-
     // =========================
     // VARIABLES
     // =========================
-
     var notes = [];
     var currentUser = null;
-
-    // Used when deleting a note
-    var deleteId = null;
-
-    // Used when editing a note
     var editingNoteId = null;
-
-
     // =========================
     // HTML ELEMENTS
     // =========================
-
     var emailInput =
       document.getElementById("emailInput");
-
     var passwordInput =
       document.getElementById("passwordInput");
-
     var signupBtn =
       document.getElementById("signupBtn");
-
     var loginBtn =
       document.getElementById("loginBtn");
-
     var logoutBtn =
       document.getElementById("logoutBtn");
-
     var authStatus =
       document.getElementById("authStatus");
-
     var notesContainer =
       document.getElementById("notesContainer");
-
     var emptyState =
       document.getElementById("emptyState");
-
     var addNoteBtn =
       document.getElementById("addNoteBtn");
-
     var addNoteModal =
       document.getElementById("addNoteModal");
-
     var closeModalBtn =
       document.getElementById("closeModalBtn");
-
     var noteForm =
       document.getElementById("noteForm");
-
     var searchInput =
       document.getElementById("searchInput");
-
     var filterSelect =
       document.getElementById("filterSelect");
-
     var confirmModal =
       document.getElementById("confirmModal");
-
     var cancelDeleteBtn =
       document.getElementById("cancelDeleteBtn");
-
     var confirmDeleteBtn =
       document.getElementById("confirmDeleteBtn");
-
     var noteTitle =
       document.getElementById("noteTitle");
-
     var noteContent =
       document.getElementById("noteContent");
-
-
+    
     // =========================
     // STATUS MESSAGE
     // =========================
-
     function status(message, error) {
-
       authStatus.textContent = message;
-
       authStatus.className =
         "auth-status";
-
       if (error) {
         authStatus.classList.add(
           "auth-error"
         );
       }
     }
-
-
     // =========================
     // LOGIN UI
     // =========================
-
     function loggedIn() {
-
       emailInput.style.display = "none";
-
       passwordInput.style.display = "none";
-
       signupBtn.style.display = "none";
-
       loginBtn.style.display = "none";
-
       logoutBtn.style.display =
         "inline-block";
     }
-
-
     function loggedOut() {
-
       emailInput.style.display = "";
-
       passwordInput.style.display = "";
-
       signupBtn.style.display =
         "inline-block";
-
       loginBtn.style.display =
         "inline-block";
-
       logoutBtn.style.display = "none";
     }
-
-
     // =========================
     // SIGN UP
     // =========================
-
     signupBtn.addEventListener(
       "click",
       async function () {
-
         var email =
           emailInput.value.trim();
-
         var password =
           passwordInput.value;
-
-
         if (!email || !password) {
-
           status(
             "Enter an email and password.",
             true
           );
-
           return;
         }
-
-
         if (password.length < 6) {
-
           status(
             "Password must be at least 6 characters.",
             true
           );
-
           return;
         }
-
-
         signupBtn.disabled = true;
-
         loginBtn.disabled = true;
-
         status(
           "Creating account..."
         );
-
-
         var result =
           await supabaseClient.auth.signUp(
             {
@@ -197,88 +126,56 @@ document.addEventListener(
               password: password
             }
           );
-
-
         signupBtn.disabled = false;
-
         loginBtn.disabled = false;
-
-
         if (result.error) {
-
           console.error(
             "SIGNUP ERROR:",
             result.error
           );
-
           status(
             result.error.message,
             true
           );
-
           return;
         }
-
-
         if (result.data.session) {
-
           currentUser =
             result.data.user;
-
           loggedIn();
-
           status(
             "Account created and logged in!"
           );
-
           await loadNotes();
-
         } else {
-
           status(
             "Account created! Check your email to confirm it."
           );
         }
-
       }
     );
-
-
     // =========================
     // LOGIN
     // =========================
-
     loginBtn.addEventListener(
       "click",
       async function () {
-
         var email =
           emailInput.value.trim();
-
         var password =
           passwordInput.value;
-
-
         if (!email || !password) {
-
           status(
             "Enter your email and password.",
             true
           );
-
           return;
         }
-
-
         loginBtn.disabled = true;
-
         signupBtn.disabled = true;
-
         status(
           "Logging in..."
         );
-
-
         var result =
           await supabaseClient.auth.signInWithPassword(
             {
@@ -286,45 +183,29 @@ document.addEventListener(
               password: password
             }
           );
-
-
         loginBtn.disabled = false;
-
         signupBtn.disabled = false;
-
-
         if (result.error) {
-
           console.error(
             "LOGIN ERROR:",
             result.error
           );
-
           status(
             result.error.message,
             true
           );
-
           return;
         }
-
-
         currentUser =
           result.data.user;
-
         loggedIn();
-
         status(
           "Logged in as " +
           currentUser.email
         );
-
         await loadNotes();
-
       }
     );
-
-
     // =========================
     // LOGOUT
     // =========================
@@ -830,156 +711,95 @@ document.addEventListener(
             formatDate(
               note.created_at
             );
-
-
           footer.appendChild(
             tag
           );
-
           footer.appendChild(
             date
           );
-
-
           // =========================
           // BUILD NOTE
           // =========================
-
           content.appendChild(
             header
           );
-
           content.appendChild(
             text
           );
-
           content.appendChild(
             footer
           );
-
-
           card.appendChild(
             content
           );
-
-
           notesContainer.appendChild(
             card
           );
-
         }
       );
-
-
       // =========================
       // EMPTY STATE
       // =========================
-
       if (list.length === 0) {
-
         emptyState.style.display =
           "block";
-
       } else {
-
         emptyState.style.display =
           "none";
       }
-
     }
-
-
     // =========================
     // OPEN EDIT MODAL
     // =========================
-
     function openEditModal(note) {
-
       if (!currentUser) {
-
         status(
           "Please log in first.",
           true
         );
-
         return;
       }
-
-
-      // Remember which note
-      // we are editing
-
       editingNoteId =
         note.id;
-
-
-      // Put existing information
-      // into the form
-
       noteTitle.value =
         note.title;
-
       noteContent.value =
         note.content;
-
-
-      // Select the correct tag
-
       var tagRadio =
         document.querySelector(
           'input[name="noteTag"][value="' +
           note.tag +
           '"]'
         );
-
-
       if (tagRadio) {
-
         tagRadio.checked =
           true;
       }
-
-
       // Change modal title
-
       var modalTitle =
         document.querySelector(
           ".modal-title"
         );
-
-
       if (modalTitle) {
-
         modalTitle.textContent =
           "Edit Note";
       }
-
-
-      // Open modal
-
       addNoteModal.classList.add(
         "active"
       );
-
     }
-
-
     // =========================
     // DELETE NOTE
     // =========================
-
     confirmDeleteBtn.addEventListener(
       "click",
       async function () {
-
         if (
           !deleteId ||
           !currentUser
         ) {
           return;
         }
-
-
         var result =
           await supabaseClient
             .from("notes")
@@ -992,200 +812,118 @@ document.addEventListener(
               "user_id",
               currentUser.id
             );
-
-
         if (result.error) {
-
           console.error(
             "DELETE ERROR:",
             result.error
           );
-
           alert(
             result.error.message
           );
-
           return;
         }
-
-
         notes =
           notes.filter(
             function (note) {
-
               return (
                 note.id !==
                 deleteId
               );
-
             }
           );
-
-
         deleteId = null;
-
-
         confirmModal.classList.remove(
           "active"
         );
-
-
         renderNotes();
-
       }
     );
-
-
     // =========================
     // CANCEL DELETE
     // =========================
-
     cancelDeleteBtn.addEventListener(
       "click",
       function () {
-
         deleteId = null;
-
         confirmModal.classList.remove(
           "active"
         );
-
       }
     );
-
-
     // =========================
     // ADD NOTE BUTTON
     // =========================
-
     addNoteBtn.addEventListener(
       "click",
       function () {
-
         if (!currentUser) {
-
           status(
             "Please log in first.",
             true
           );
-
           return;
         }
-
-
-        // Make sure we're creating a new note
         editingNoteId = null;
-
-
-        // Reset form
-
         noteForm.reset();
-
-
-        // Reset modal title
-
         var modalTitle =
           document.querySelector(
             ".modal-title"
           );
-
-
         if (modalTitle) {
-
           modalTitle.textContent =
             "New Note";
         }
-
-
-        // Open modal
-
         addNoteModal.classList.add(
           "active"
         );
-
       }
     );
-
-
     // =========================
     // CLOSE ADD/EDIT MODAL
     // =========================
-
     closeModalBtn.addEventListener(
       "click",
       closeAddModal
     );
-
-
     function closeAddModal() {
-
       addNoteModal.classList.remove(
         "active"
       );
-
-
       noteForm.reset();
-
-
-  
-      // forget any note we were editing
-
       editingNoteId = null;
-
-
-      // Change title back to New Note
-
       var modalTitle =
         document.querySelector(
           ".modal-title"
         );
-
-
       if (modalTitle) {
-
         modalTitle.textContent =
           "New Note";
       }
-
     }
-
-
     // =========================
     // SEARCH
     // =========================
-
     searchInput.addEventListener(
       "input",
       filterNotes
     );
-
-
     // =========================
     // FILTER
     // =========================
-
     filterSelect.addEventListener(
       "change",
       filterNotes
     );
-
-
     function filterNotes() {
-
       var search =
         searchInput.value
           .toLowerCase()
           .trim();
-
-
       var filter =
         filterSelect.value;
-
-
       var filtered =
         notes.filter(
           function (note) {
-
             var matchesSearch =
               !search ||
               note.title
@@ -1194,130 +932,80 @@ document.addEventListener(
               note.content
                 .toLowerCase()
                 .includes(search);
-
-
             var matchesFilter =
               filter === "all" ||
               note.tag === filter;
-
-
             return (
               matchesSearch &&
               matchesFilter
             );
-
           }
         );
-
-
       renderNotes(
         filtered
       );
-
     }
-
-
     // =========================
     // TAG CLASS
     // =========================
-
     function getTagClass(tag) {
-
       var classes = {
-
         school:
           "tag-school",
-
         random:
           "tag-random",
-
         ideas:
           "tag-ideas",
-
         reminders:
           "tag-reminders"
-
       };
-
-
       return (
         classes[tag] || ""
       );
-
     }
-
-
     // =========================
     // TAG ICON
     // =========================
-
     function getTagIcon(tag) {
-
       var icons = {
-
         school:
           '<i class="fas fa-briefcase"></i>',
-
         random:
           '<i class="fas fa-user"></i>',
-
         ideas:
           '<i class="fas fa-lightbulb"></i>',
-
         reminders:
           '<i class="fas fa-bell"></i>'
-
       };
-
-
       return (
         icons[tag] || ""
       );
-
     }
-
-
-    // =========================
+    // ========================
     // TAG NAME
     // =========================
-
     function getTagName(tag) {
-
       var names = {
-
         school:
           "School",
-
         random:
           "Random",
-
         ideas:
           "Ideas",
-
         reminders:
           "Reminders"
-
       };
-
-
       return (
         names[tag] || tag
       );
-
     }
-
-
     // =========================
     // FORMAT DATE
     // =========================
-
     function formatDate(value) {
-
       if (!value) {
         return "";
       }
-
-
       return new Date(
         value
       ).toLocaleString(
@@ -1330,52 +1018,31 @@ document.addEventListener(
           minute: "2-digit"
         }
       );
-
     }
-
-
     // =========================
     // CHECK EXISTING SESSION
     // =========================
-
     async function checkSession() {
-
       var result =
         await supabaseClient.auth.getSession();
-
-
       if (result.error) {
-
         console.error(
           "SESSION ERROR:",
           result.error
         );
-
         return;
       }
-
-
       if (result.data.session) {
-
         currentUser =
           result.data.session.user;
-
-
         loggedIn();
-
-
         status(
           "Logged in as " +
           currentUser.email
         );
-
-
         await loadNotes();
-
       } else {
-
         loggedOut();
-
       }
     }
     checkSession();
