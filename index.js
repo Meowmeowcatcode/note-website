@@ -144,12 +144,12 @@ document.addEventListener(
             result.data.user;
           loggedIn();
           status(
-            "Account created and logged in!"
+            "Account created and logged in"
           );
           await loadNotes();
         } else {
           status(
-            "Account created! Check your email to confirm it."
+            "Account created. Check your email to confirm it."
           );
         }
       }
@@ -174,7 +174,7 @@ document.addEventListener(
         loginBtn.disabled = true;
         signupBtn.disabled = true;
         status(
-          "Logging in..."
+          "Logging in.."
         );
         var result =
           await supabaseClient.auth.signInWithPassword(
@@ -209,53 +209,34 @@ document.addEventListener(
     // =========================
     // LOGOUT
     // =========================
-
     logoutBtn.addEventListener(
       "click",
       async function () {
-
         var result =
           await supabaseClient.auth.signOut();
-
-
         if (result.error) {
-
           console.error(
             "LOGOUT ERROR:",
             result.error
           );
-
           return;
         }
-
-
         currentUser = null;
-
         notes = [];
-
         loggedOut();
-
         renderNotes();
-
         status(
           "Logged out."
         );
-
       }
     );
-
-
     // =========================
     // LOAD NOTES
     // =========================
-
     async function loadNotes() {
-
       if (!currentUser) {
         return;
       }
-
-
       var result =
         await supabaseClient
           .from("notes")
@@ -270,34 +251,23 @@ document.addEventListener(
               ascending: false
             }
           );
-
-
       if (result.error) {
 
         console.error(
           "LOAD NOTES ERROR:",
           result.error
         );
-
         status(
           "Could not load notes: " +
           result.error.message,
           true
         );
-
         return;
       }
-
-
       notes =
         result.data || [];
-
-
       renderNotes();
-
     }
-
-
     // =========================
     // ADD / EDIT NOTE
     // =========================
