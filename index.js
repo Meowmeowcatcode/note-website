@@ -14,10 +14,23 @@ document.addEventListener(
   "DOMContentLoaded",
   function () {
 
+    // =========================
+    // VARIABLES
+    // =========================
+
     var notes = [];
     var currentUser = null;
+
+    // Used when deleting a note
     var deleteId = null;
 
+    // Used when editing a note
+    var editingNoteId = null;
+
+
+    // =========================
+    // HTML ELEMENTS
+    // =========================
 
     var emailInput =
       document.getElementById("emailInput");
@@ -70,6 +83,16 @@ document.addEventListener(
     var confirmDeleteBtn =
       document.getElementById("confirmDeleteBtn");
 
+    var noteTitle =
+      document.getElementById("noteTitle");
+
+    var noteContent =
+      document.getElementById("noteContent");
+
+
+    // =========================
+    // STATUS MESSAGE
+    // =========================
 
     function status(message, error) {
 
@@ -85,6 +108,10 @@ document.addEventListener(
       }
     }
 
+
+    // =========================
+    // LOGIN UI
+    // =========================
 
     function loggedIn() {
 
@@ -117,7 +144,9 @@ document.addEventListener(
     }
 
 
+    // =========================
     // SIGN UP
+    // =========================
 
     signupBtn.addEventListener(
       "click",
@@ -215,7 +244,9 @@ document.addEventListener(
     );
 
 
+    // =========================
     // LOGIN
+    // =========================
 
     loginBtn.addEventListener(
       "click",
@@ -294,7 +325,9 @@ document.addEventListener(
     );
 
 
+    // =========================
     // LOGOUT
+    // =========================
 
     logoutBtn.addEventListener(
       "click",
@@ -331,7 +364,9 @@ document.addEventListener(
     );
 
 
+    // =========================
     // LOAD NOTES
+    // =========================
 
     async function loadNotes() {
 
@@ -382,7 +417,9 @@ document.addEventListener(
     }
 
 
-    // SAVE NOTE
+    // =========================
+    // ADD / EDIT NOTE
+    // =========================
 
     noteForm.addEventListener(
       "submit",
@@ -403,17 +440,10 @@ document.addEventListener(
 
 
         var title =
-          document
-            .getElementById("noteTitle")
-            .value
-            .trim();
-
+          noteTitle.value.trim();
 
         var content =
-          document
-            .getElementById("noteContent")
-            .value
-            .trim();
+          noteContent.value.trim();
 
 
         var selected =
@@ -428,7 +458,83 @@ document.addEventListener(
             : "ideas";
 
 
-        var result =
+        // =========================
+        // EDIT EXISTING NOTE
+        // =========================
+
+        if (editingNoteId !== null) {
+
+          var updateResult =
+            await supabaseClient
+              .from("notes")
+              .update(
+                {
+                  title: title,
+                  content: content,
+                  tag: tag
+                }
+              )
+              .eq(
+                "id",
+                editingNoteId
+              )
+              .eq(
+                "user_id",
+                currentUser.id
+              )
+              .select()
+              .single();
+
+
+          if (updateResult.error) {
+
+            console.error(
+              "UPDATE NOTE ERROR:",
+              updateResult.error
+            );
+
+            alert(
+              updateResult.error.message
+            );
+
+            return;
+          }
+
+
+          // Replace the old note
+          // with the updated note
+          notes =
+            notes.map(
+              function (note) {
+
+                if (
+                  note.id ===
+                  editingNoteId
+                ) {
+                  return updateResult.data;
+                }
+
+                return note;
+              }
+            );
+
+
+          editingNoteId = null;
+
+
+          renderNotes();
+
+          closeAddModal();
+
+          return;
+        }
+
+
+        // =========================
+        // CREATE NEW NOTE
+        // =========================
+
+        var insertResult =
           await supabaseClient
             .from("notes")
             .insert(
@@ -450,15 +556,15 @@ document.addEventListener(
             .single();
 
 
-        if (result.error) {
+        if (insertResult.error) {
 
           console.error(
             "SAVE NOTE ERROR:",
-            result.error
+            insertResult.error
           );
 
           alert(
-            result.error.message
+            insertResult.error.message
           );
 
           return;
@@ -466,7 +572,7 @@ document.addEventListener(
 
 
         notes.unshift(
-          result.data
+          insertResult.data
         );
 
 
@@ -478,11 +584,11 @@ document.addEventListener(
     );
 
 
+    // =========================
     // DISPLAY NOTES
+    // =========================
 
-    function renderNotes(
-      list
-    ) {
+    function renderNotes(list) {
 
       if (!list) {
         list = notes;
@@ -496,41 +602,53 @@ document.addEventListener(
       list.forEach(
         function (note) {
 
+          // =========================
+          // NOTE CARD
+          // =========================
+
           var card =
             document.createElement(
               "div"
             );
 
-
           card.className =
             "note-card fade-in";
 
+
+          // =========================
+          // CONTENT
+          // =========================
 
           var content =
             document.createElement(
               "div"
             );
 
-
           content.className =
             "note-content";
 
+
+          // =========================
+          // HEADER
+          // =========================
 
           var header =
             document.createElement(
               "div"
             );
 
-
           header.className =
             "note-header";
 
+
+          // =========================
+          // TITLE
+          // =========================
 
           var title =
             document.createElement(
               "h3"
             );
-
 
           title.className =
             "note-title";
@@ -539,33 +657,70 @@ document.addEventListener(
             note.title;
 
 
+          // =========================
+          // ACTION BUTTONS
+          // =========================
+
           var actions =
             document.createElement(
               "div"
             );
 
-
           actions.className =
             "note-actions";
 
 
-          var button =
+          // =========================
+          // EDIT BUTTON
+          // =========================
+
+          var editButton =
             document.createElement(
               "button"
             );
 
+          editButton.className =
+            "edit-btn";
 
-          button.className =
-            "delete-btn";
-
-          button.type =
+          editButton.type =
             "button";
 
-          button.innerHTML =
+          editButton.innerHTML =
+            '<i class="fas fa-edit"></i>';
+
+
+          editButton.addEventListener(
+            "click",
+            function () {
+
+              openEditModal(
+                note
+              );
+
+            }
+          );
+
+
+          // =========================
+          // DELETE BUTTON
+          // =========================
+
+          var deleteButton =
+            document.createElement(
+              "button"
+            );
+
+          deleteButton.className =
+            "delete-btn";
+
+          deleteButton.type =
+            "button";
+
+          deleteButton.innerHTML =
             '<i class="fas fa-trash"></i>';
 
 
-          button.addEventListener(
+          deleteButton.addEventListener(
             "click",
             function () {
 
@@ -580,10 +735,21 @@ document.addEventListener(
           );
 
 
+          // Add buttons
+          // to actions container
+
           actions.appendChild(
-            button
+            editButton
           );
 
+          actions.appendChild(
+            deleteButton
+          );
+
+
+          // =========================
+          // HEADER
+          // =========================
 
           header.appendChild(
             title
@@ -594,11 +760,14 @@ document.addEventListener(
           );
 
 
+          // =========================
+          // NOTE TEXT
+          // =========================
+
           var text =
             document.createElement(
               "p"
             );
-
 
           text.className =
             "note-text";
@@ -607,28 +776,33 @@ document.addEventListener(
             note.content;
 
 
+          // =========================
+          // FOOTER
+          // =========================
+
           var footer =
             document.createElement(
               "div"
             );
 
-
           footer.className =
             "note-footer";
 
+
+          // =========================
+          // TAG
+          // =========================
 
           var tag =
             document.createElement(
               "span"
             );
 
-
           tag.className =
             "note-tag " +
             getTagClass(
               note.tag
             );
-
 
           tag.innerHTML =
             getTagIcon(
@@ -640,11 +814,14 @@ document.addEventListener(
             );
 
 
+          // =========================
+          // DATE
+          // =========================
+
           var date =
             document.createElement(
               "span"
             );
-
 
           date.className =
             "note-date";
@@ -663,6 +840,10 @@ document.addEventListener(
             date
           );
 
+
+          // =========================
+          // BUILD NOTE
+          // =========================
 
           content.appendChild(
             header
@@ -690,6 +871,10 @@ document.addEventListener(
       );
 
 
+      // =========================
+      // EMPTY STATE
+      // =========================
+
       if (list.length === 0) {
 
         emptyState.style.display =
@@ -704,13 +889,93 @@ document.addEventListener(
     }
 
 
-    // DELETE
+    // =========================
+    // OPEN EDIT MODAL
+    // =========================
+
+    function openEditModal(note) {
+
+      if (!currentUser) {
+
+        status(
+          "Please log in first.",
+          true
+        );
+
+        return;
+      }
+
+
+      // Remember which note
+      // we are editing
+
+      editingNoteId =
+        note.id;
+
+
+      // Put existing information
+      // into the form
+
+      noteTitle.value =
+        note.title;
+
+      noteContent.value =
+        note.content;
+
+
+      // Select the correct tag
+
+      var tagRadio =
+        document.querySelector(
+          'input[name="noteTag"][value="' +
+          note.tag +
+          '"]'
+        );
+
+
+      if (tagRadio) {
+
+        tagRadio.checked =
+          true;
+      }
+
+
+      // Change modal title
+
+      var modalTitle =
+        document.querySelector(
+          ".modal-title"
+        );
+
+
+      if (modalTitle) {
+
+        modalTitle.textContent =
+          "Edit Note";
+      }
+
+
+      // Open modal
+
+      addNoteModal.classList.add(
+        "active"
+      );
+
+    }
+
+
+    // =========================
+    // DELETE NOTE
+    // =========================
 
     confirmDeleteBtn.addEventListener(
       "click",
       async function () {
 
-        if (!deleteId || !currentUser) {
+        if (
+          !deleteId ||
+          !currentUser
+        ) {
           return;
         }
 
@@ -747,15 +1012,18 @@ document.addEventListener(
         notes =
           notes.filter(
             function (note) {
+
               return (
                 note.id !==
                 deleteId
               );
+
             }
           );
 
 
         deleteId = null;
+
 
         confirmModal.classList.remove(
           "active"
@@ -767,6 +1035,10 @@ document.addEventListener(
       }
     );
 
+
+    // =========================
+    // CANCEL DELETE
+    // =========================
 
     cancelDeleteBtn.addEventListener(
       "click",
@@ -782,7 +1054,9 @@ document.addEventListener(
     );
 
 
+    // =========================
     // ADD NOTE BUTTON
+    // =========================
 
     addNoteBtn.addEventListener(
       "click",
@@ -799,6 +1073,32 @@ document.addEventListener(
         }
 
 
+        // Make sure we're creating a new note
+        editingNoteId = null;
+
+
+        // Reset form
+
+        noteForm.reset();
+
+
+        // Reset modal title
+
+        var modalTitle =
+          document.querySelector(
+            ".modal-title"
+          );
+
+
+        if (modalTitle) {
+
+          modalTitle.textContent =
+            "New Note";
+        }
+
+
+        // Open modal
+
         addNoteModal.classList.add(
           "active"
         );
@@ -806,6 +1106,10 @@ document.addEventListener(
       }
     );
 
+
+    // =========================
+    // CLOSE ADD/EDIT MODAL
+    // =========================
 
     closeModalBtn.addEventListener(
       "click",
@@ -819,18 +1123,46 @@ document.addEventListener(
         "active"
       );
 
+
       noteForm.reset();
+
+
+  
+      // forget any note we were editing
+
+      editingNoteId = null;
+
+
+      // Change title back to New Note
+
+      var modalTitle =
+        document.querySelector(
+          ".modal-title"
+        );
+
+
+      if (modalTitle) {
+
+        modalTitle.textContent =
+          "New Note";
+      }
 
     }
 
 
-    // SEARCH AND FILTER
+    // =========================
+    // SEARCH
+    // =========================
 
     searchInput.addEventListener(
       "input",
       filterNotes
     );
 
+
+    // =========================
+    // FILTER
+    // =========================
 
     filterSelect.addEventListener(
       "change",
@@ -885,15 +1217,26 @@ document.addEventListener(
     }
 
 
-    // TAG HELPERS
+    // =========================
+    // TAG CLASS
+    // =========================
 
     function getTagClass(tag) {
 
       var classes = {
-        school: "tag-school",
-        random: "tag-random",
-        ideas: "tag-ideas",
-        reminders: "tag-reminders"
+
+        school:
+          "tag-school",
+
+        random:
+          "tag-random",
+
+        ideas:
+          "tag-ideas",
+
+        reminders:
+          "tag-reminders"
+
       };
 
 
@@ -904,9 +1247,14 @@ document.addEventListener(
     }
 
 
+    // =========================
+    // TAG ICON
+    // =========================
+
     function getTagIcon(tag) {
 
       var icons = {
+
         school:
           '<i class="fas fa-briefcase"></i>',
 
@@ -918,6 +1266,7 @@ document.addEventListener(
 
         reminders:
           '<i class="fas fa-bell"></i>'
+
       };
 
 
@@ -928,13 +1277,26 @@ document.addEventListener(
     }
 
 
+    // =========================
+    // TAG NAME
+    // =========================
+
     function getTagName(tag) {
 
       var names = {
-        school: "School",
-        random: "Random",
-        ideas: "Ideas",
-        reminders: "Reminders"
+
+        school:
+          "School",
+
+        random:
+          "Random",
+
+        ideas:
+          "Ideas",
+
+        reminders:
+          "Reminders"
+
       };
 
 
@@ -945,9 +1307,11 @@ document.addEventListener(
     }
 
 
-    function formatDate(
-      value
-    ) {
+    // =========================
+    // FORMAT DATE
+    // =========================
+
+    function formatDate(value) {
 
       if (!value) {
         return "";
@@ -970,7 +1334,9 @@ document.addEventListener(
     }
 
 
+    // =========================
     // CHECK EXISTING SESSION
+    // =========================
 
     async function checkSession() {
 
@@ -994,12 +1360,15 @@ document.addEventListener(
         currentUser =
           result.data.session.user;
 
+
         loggedIn();
+
 
         status(
           "Logged in as " +
           currentUser.email
         );
+
 
         await loadNotes();
 
@@ -1008,11 +1377,7 @@ document.addEventListener(
         loggedOut();
 
       }
-
     }
-
-
     checkSession();
-
   }
 );
