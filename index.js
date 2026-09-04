@@ -920,14 +920,16 @@ document.addEventListener(
     // =========================
     function getTagClass(tag) {
       var classes = {
-        school:
-          "tag-school",
+        maths:
+          "tag-maths",
         random:
           "tag-random",
         ideas:
           "tag-ideas",
-        reminders:
-          "tag-reminders"
+        compsci:
+          "tag-compsci",
+        fm:
+          "tag-fm"
       };
       return (
         classes[tag] || ""
@@ -938,13 +940,13 @@ document.addEventListener(
     // =========================
     function getTagIcon(tag) {
       var icons = {
-        school:
+        maths:
           '<i class="fas fa-briefcase"></i>',
         random:
           '<i class="fas fa-user"></i>',
         ideas:
           '<i class="fas fa-lightbulb"></i>',
-        reminders:
+        fm:
           '<i class="fas fa-bell"></i>'
       };
       return (
@@ -956,14 +958,14 @@ document.addEventListener(
     // =========================
     function getTagName(tag) {
       var names = {
-        school:
-          "School",
+        maths:
+          "Maths",
         random:
           "Random",
         ideas:
           "Ideas",
-        reminders:
-          "Reminders"
+        fm:
+          "Further maths"
       };
       return (
         names[tag] || tag
